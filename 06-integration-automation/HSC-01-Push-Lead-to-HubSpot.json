@@ -1,0 +1,137 @@
+{
+  "name": "HSC-01 - Push Lead to HubSpot [Dev]",
+  "nodes": [
+    {
+      "id": "sticky-readme",
+      "name": "README",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [-460, -280],
+      "parameters": {
+        "width": 380,
+        "height": 300,
+        "color": 4,
+        "content": "## HSC-01 - Push Lead to HubSpot [Dev]\n\n**Owned By:** Ronny Kalaksanan\n**Last Updated:** 2026-08-18\n\n**Description:**\nMengirim data lead baru dari trigger manual/form ke HubSpot Contacts lewat Private App Token. Bagian dari project portofolio n8n <-> HubSpot.\n\n**Flow:**\n1. TriggerManualTest - trigger uji coba\n2. PrepareLeadPayload - isi data lead contoh\n3. ValidateLeadSchema - validasi field wajib\n4. PushContactToHubSpot - POST ke HubSpot Contacts API (retry 3x)\n5. LogSyncResult - catat hasil sinkronisasi\n\n**Dependencies:**\n- Credential: \"HubSpot Private App Token\" (Header Auth, Authorization: Bearer <token>)\n- ErrorHandler [Global] workflow (belum disambungkan di iterasi ini - next step)"
+      }
+    },
+    {
+      "id": "trigger-manual",
+      "name": "TriggerManualTest",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [-460, 40],
+      "parameters": {}
+    },
+    {
+      "id": "set-payload",
+      "name": "PrepareLeadPayload",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [-220, 40],
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            { "id": "a1", "name": "email", "type": "string", "value": "test.lead@example.com" },
+            { "id": "a2", "name": "firstname", "type": "string", "value": "Test" },
+            { "id": "a3", "name": "lastname", "type": "string", "value": "Lead" }
+          ]
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "code-validate",
+      "name": "ValidateLeadSchema",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [20, 40],
+      "notesInFlow": true,
+      "notes": "Validasi manual field wajib. Ganti dengan Zod-style schema check kalau butuh validasi lebih kompleks.",
+      "parameters": {
+        "jsCode": "const item = $input.first().json;\nconst requiredFields = ['email', 'firstname', 'lastname'];\nconst missing = requiredFields.filter(f => !item[f] || String(item[f]).trim() === '');\n\nif (missing.length > 0) {\n  throw new Error(`ValidateLeadSchema: field wajib kosong -> ${missing.join(', ')}`);\n}\n\nif (!/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(item.email)) {\n  throw new Error('ValidateLeadSchema: format email tidak valid');\n}\n\nreturn [{ json: item }];"
+      }
+    },
+    {
+      "id": "http-push",
+      "name": "PushContactToHubSpot",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [260, 40],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 1000,
+      "onError": "continueErrorOutput",
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.hubapi.com/crm/v3/objects/contacts",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ { \"properties\": { \"email\": $json.email, \"firstname\": $json.firstname, \"lastname\": $json.lastname } } }}",
+        "options": {}
+      },
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "REPLACE_WITH_CREDENTIAL_ID",
+          "name": "HubSpot Private App Token"
+        }
+      }
+    },
+    {
+      "id": "set-log-success",
+      "name": "LogSyncResult",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [520, -60],
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            { "id": "l1", "name": "status", "type": "string", "value": "success" },
+            { "id": "l2", "name": "syncedAt", "type": "string", "value": "={{ $now.toISO() }}" }
+          ]
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "set-log-error",
+      "name": "LogSyncError",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [520, 160],
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            { "id": "e1", "name": "status", "type": "string", "value": "failed" },
+            { "id": "e2", "name": "error", "type": "string", "value": "={{ $json.error?.message || 'Unknown error from HubSpot API' }}" }
+          ]
+        },
+        "options": {}
+      }
+    }
+  ],
+  "connections": {
+    "TriggerManualTest": {
+      "main": [[{ "node": "PrepareLeadPayload", "type": "main", "index": 0 }]]
+    },
+    "PrepareLeadPayload": {
+      "main": [[{ "node": "ValidateLeadSchema", "type": "main", "index": 0 }]]
+    },
+    "ValidateLeadSchema": {
+      "main": [[{ "node": "PushContactToHubSpot", "type": "main", "index": 0 }]]
+    },
+    "PushContactToHubSpot": {
+      "main": [
+        [{ "node": "LogSyncResult", "type": "main", "index": 0 }],
+        [{ "node": "LogSyncError", "type": "main", "index": 0 }]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "Asia/Jakarta"
+  },
+  "pinData": {}
+}
