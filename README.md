@@ -17,7 +17,7 @@ Setiap folder di repo ini mewakili satu "layer" kemampuan CRM, dibangun bertahap
 |---|---|---|
 | [`01-data-model`](./01-data-model) | Contact, Company, Deal — struktur data dasar & custom properties | Belum dimulai |
 | [`02-pipeline-lifecycle`](./02-pipeline-lifecycle) | Deal pipeline & lifecycle stage (lead → customer) | ✅ Selesai |
-| [`03-segmentation`](./03-segmentation) | Active Lists & segmentasi kontak | Belum dimulai |
+| [`03-segmentation`](./03-segmentation) | Active Lists & segmentasi kontak | ✅ Selesai |
 | [`04-native-automation`](./04-native-automation) | Automation bawaan HubSpot (dalam batas plan Free) | Belum dimulai |
 | [`05-reporting`](./05-reporting) | Dashboard & reporting dasar | Belum dimulai |
 | [`06-integration-automation`](./06-integration-automation) | Integrasi n8n ↔ HubSpot + AI enrichment (Groq) | ✅ Selesai |
