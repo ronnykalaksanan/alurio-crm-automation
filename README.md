@@ -21,7 +21,7 @@ Setiap folder di repo ini mewakili satu "layer" kemampuan CRM, dibangun bertahap
 | [`04-native-automation`](./04-native-automation) | Automation bawaan HubSpot (dalam batas plan Free) | ✅ Selesai |
 | [`05-reporting`](./05-reporting) | Dashboard & reporting dasar | ✅ Selesai |
 | [`06-integration-automation`](./06-integration-automation) | Integrasi n8n ↔ HubSpot + AI enrichment (Groq) | ✅ Selesai |
-| [`07-governance`](./07-governance) | Data governance: dedup, permission | Belum dimulai |
+| [`07-governance`](./07-governance) | Data governance: dedup, permission | ✅ Selesai |
 
 ## Kenapa Alurio?
 
