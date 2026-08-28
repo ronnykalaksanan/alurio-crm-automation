@@ -15,6 +15,7 @@ Setiap folder di repo ini mewakili satu "layer" kemampuan CRM, dibangun bertahap
 
 | Folder | Layer | Status |
 |---|---|---|
+| [`00-orchestration`](./00-orchestration) | Menyambungkan semua workflow (HSC-01 s/d HSC-04) jadi satu alur otomatis end-to-end | ✅ Selesai |
 | [`01-data-model`](./01-data-model) | Contact, Company, Deal — struktur data dasar & custom properties | Belum dimulai |
 | [`02-pipeline-lifecycle`](./02-pipeline-lifecycle) | Deal pipeline & lifecycle stage (lead → customer) | ✅ Selesai |
 | [`03-segmentation`](./03-segmentation) | Active Lists & segmentasi kontak | ✅ Selesai |
@@ -30,3 +31,7 @@ Alurio dirancang sebagai agency AI automation yang butuh CRM buat kelola lead kl
 ## Standar Workflow
 
 Semua workflow n8n di repo ini mengikuti SOP konsisten: naming convention (`[LayerCode]-[NN] - [Deskripsi] [Env]`), retry logic (3x, 1000ms) di setiap node yang panggil API eksternal, Sticky Note README di tiap workflow, dan credential selalu lewat n8n Credentials Manager (tidak pernah hardcoded).
+
+## Status Project
+
+Seluruh layer inti (2, 3, 4, 5, 6, 7) sudah selesai dibangun dan didokumentasikan, dan seluruh workflow individual (HSC-01 s/d HSC-04) sudah disambungkan menjadi sistem otomatis end-to-end lewat dua orchestrator di `00-orchestration` — bukan lagi kumpulan workflow yang harus dijalankan manual satu per satu. Sepanjang proses, beberapa insight penting ditemukan dan didokumentasikan langsung di README masing-masing layer: dari limitasi paket HubSpot Free, native automation lifecycle stage yang meng-override input manual, sampai jebakan logika filter "ALL vs ANY" di reporting.
