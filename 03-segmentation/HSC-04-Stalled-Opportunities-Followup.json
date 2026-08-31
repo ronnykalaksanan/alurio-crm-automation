@@ -2,121 +2,114 @@
   "name": "HSC-04 - Stalled Opportunities Follow-up Summary [Dev]",
   "nodes": [
     {
-      "id": "sticky-readme-4",
+      "parameters": {
+        "content": "## HSC-04 - Stalled Opportunities Follow-up Summary [Dev]\n\n**Owned By:** Ronny Kalaksanan\n**Last Updated:** 2026-08-23\n\n**Description:**\nBagian dari Layer 3 (Segmentation). Mengambil semua contact di active list 'Stalled Opportunities' HubSpot, lalu minta Groq membuat ringkasan follow-up yang actionable untuk tim Alurio.\n\n**Flow:**\n1. TriggerManualTest\n2. SetListId - listId = 13 (Stalled Opportunities)\n3. GetListMembers - GET memberships list dari HubSpot\n4. ExtractRecordIds - ambil array ID contact dari hasil membership\n5. HasMembers - cek ada member atau tidak\n6. GetContactDetails - ambil detail contact (email, nama, lifecycle) via Search API\n7. FormatContactList - susun jadi teks list\n8. GenerateFollowUpSummary - Groq bikin ringkasan actionable\n9. LogSummary / LogSyncError\n\n**Dependencies:**\n- Credential: \"HubSpot Private App Token\" (scope: crm.lists.read, crm.objects.contacts.read)\n- Credential: \"Groq API Key\"\n- List ID Stalled Opportunities: 13 | New Leads This Week: 12",
+        "height": 692,
+        "width": 748,
+        "color": 4
+      },
+      "id": "8d445cdb-f630-4041-96fb-4d20621430de",
       "name": "README",
       "type": "n8n-nodes-base.stickyNote",
       "typeVersion": 1,
-      "position": [-700, -320],
-      "parameters": {
-        "width": 460,
-        "height": 340,
-        "color": 4,
-        "content": "## HSC-04 - Stalled Opportunities Follow-up Summary [Dev]\n\n**Owned By:** Ronny Kalaksanan\n**Last Updated:** 2026-08-23\n\n**Description:**\nBagian dari Layer 3 (Segmentation). Mengambil semua contact di active list 'Stalled Opportunities' HubSpot, lalu minta Groq membuat ringkasan follow-up yang actionable untuk tim Alurio.\n\n**Flow:**\n1. TriggerManualTest\n2. SetListId - listId = 13 (Stalled Opportunities)\n3. GetListMembers - GET memberships list dari HubSpot\n4. ExtractRecordIds - ambil array ID contact dari hasil membership\n5. HasMembers - cek ada member atau tidak\n6. GetContactDetails - ambil detail contact (email, nama, lifecycle) via Search API\n7. FormatContactList - susun jadi teks list\n8. GenerateFollowUpSummary - Groq bikin ringkasan actionable\n9. LogSummary / LogSyncError\n\n**Dependencies:**\n- Credential: \"HubSpot Private App Token\" (scope: crm.lists.read, crm.objects.contacts.read)\n- Credential: \"Groq API Key\"\n- List ID Stalled Opportunities: 13 | New Leads This Week: 12"
-      }
+      "position": [
+        -160,
+        -464
+      ]
     },
     {
-      "id": "trigger-manual-4",
-      "name": "TriggerManualTest",
-      "type": "n8n-nodes-base.manualTrigger",
-      "typeVersion": 1,
-      "position": [-700, 40],
-      "parameters": {}
-    },
-    {
-      "id": "set-listid",
-      "name": "SetListId",
-      "type": "n8n-nodes-base.set",
-      "typeVersion": 3.4,
-      "position": [-460, 40],
-      "notesInFlow": true,
-      "notes": "Ganti listId ke 12 kalau mau jalanin buat 'New Leads This Week' sebagai gantinya.",
       "parameters": {
-        "assignments": {
-          "assignments": [
-            { "id": "s1", "name": "listId", "type": "string", "value": "13" }
-          ]
-        },
-        "options": {}
-      }
-    },
-    {
-      "id": "http-get-members",
-      "name": "GetListMembers",
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.2,
-      "position": [-220, 40],
-      "retryOnFail": true,
-      "maxTries": 3,
-      "waitBetweenTries": 1000,
-      "onError": "continueErrorOutput",
-      "parameters": {
-        "method": "GET",
         "url": "=https://api.hubapi.com/crm/v3/lists/{{ $json.listId }}/memberships/join-order",
         "authentication": "genericCredentialType",
         "genericAuthType": "httpHeaderAuth",
         "sendQuery": true,
         "queryParameters": {
-          "parameters": [{ "name": "limit", "value": "100" }]
+          "parameters": [
+            {
+              "name": "limit",
+              "value": "100"
+            }
+          ]
         },
         "options": {}
       },
+      "id": "0de1f33c-373e-4947-8a67-d8b0cddcd358",
+      "name": "GetListMembers",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        64,
+        352
+      ],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 1000,
       "credentials": {
         "httpHeaderAuth": {
-          "id": "REPLACE_WITH_CREDENTIAL_ID",
-          "name": "HubSpot Private App Token"
+          "id": "EXnS942x3zXjSVeW",
+          "name": "HubSpotAuth"
         }
-      }
+      },
+      "onError": "continueErrorOutput"
     },
     {
-      "id": "code-extract-ids",
+      "parameters": {
+        "jsCode": "const body = $input.first().json;\nconst results = body.results || [];\nconst recordIds = results.map(r => String(r.recordId));\n\nreturn [{ json: { recordIds, count: recordIds.length } }];"
+      },
+      "id": "fb0f2bc6-2424-45a4-bab1-2fc4978a1876",
       "name": "ExtractRecordIds",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [20, 40],
-      "parameters": {
-        "jsCode": "const body = $input.first().json;\nconst results = body.results || [];\nconst recordIds = results.map(r => String(r.recordId));\n\nreturn [{ json: { recordIds, count: recordIds.length } }];"
-      }
+      "position": [
+        288,
+        288
+      ]
     },
     {
-      "id": "if-has-members",
-      "name": "HasMembers",
-      "type": "n8n-nodes-base.if",
-      "typeVersion": 2.2,
-      "position": [260, 40],
       "parameters": {
         "conditions": {
-          "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "loose" },
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
           "conditions": [
             {
               "id": "cond1",
               "leftValue": "={{ $json.count }}",
               "rightValue": 0,
-              "operator": { "type": "number", "operation": "gt" }
+              "operator": {
+                "type": "number",
+                "operation": "gt"
+              }
             }
           ],
           "combinator": "and"
         },
         "options": {}
-      }
+      },
+      "id": "64f1d12c-9af4-4cf5-bfb9-ba822c09531d",
+      "name": "HasMembers",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        512,
+        288
+      ]
     },
     {
-      "id": "noop-no-members",
+      "parameters": {},
+      "id": "9d6487e9-5326-4751-8bad-e2c3e51992cd",
       "name": "NoStalledOpportunities",
       "type": "n8n-nodes-base.noOp",
       "typeVersion": 1,
-      "position": [500, 200],
-      "parameters": {}
+      "position": [
+        896,
+        352
+      ]
     },
     {
-      "id": "http-get-contacts",
-      "name": "GetContactDetails",
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.2,
-      "position": [500, -60],
-      "retryOnFail": true,
-      "maxTries": 3,
-      "waitBetweenTries": 1000,
-      "onError": "continueErrorOutput",
       "parameters": {
         "method": "POST",
         "url": "https://api.hubapi.com/crm/v3/objects/contacts/search",
@@ -127,33 +120,39 @@
         "jsonBody": "={{ { \"filterGroups\": [ { \"filters\": [ { \"propertyName\": \"hs_object_id\", \"operator\": \"IN\", \"values\": $json.recordIds } ] } ], \"properties\": [\"email\", \"firstname\", \"lastname\", \"lifecyclestage\"], \"limit\": 100 } }}",
         "options": {}
       },
-      "credentials": {
-        "httpHeaderAuth": {
-          "id": "REPLACE_WITH_CREDENTIAL_ID",
-          "name": "HubSpot Private App Token"
-        }
-      }
-    },
-    {
-      "id": "code-format-list",
-      "name": "FormatContactList",
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [740, -60],
-      "parameters": {
-        "jsCode": "const body = $input.first().json;\nconst results = body.results || [];\n\nconst lines = results.map(c => {\n  const p = c.properties || {};\n  return `- ${p.firstname || ''} ${p.lastname || ''} (${p.email || 'no email'})`;\n}).join('\\n');\n\nreturn [{ json: { contactListText: lines || 'Tidak ada detail contact ditemukan.', count: results.length } }];"
-      }
-    },
-    {
-      "id": "http-groq-4",
-      "name": "GenerateFollowUpSummary",
+      "id": "71dd8092-939a-4db0-8164-5a8f06ef5f9d",
+      "name": "GetContactDetails",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [980, -60],
+      "position": [
+        736,
+        192
+      ],
       "retryOnFail": true,
       "maxTries": 3,
       "waitBetweenTries": 1000,
-      "onError": "continueErrorOutput",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "EXnS942x3zXjSVeW",
+          "name": "HubSpotAuth"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "const body = $input.first().json;\nconst results = body.results || [];\n\nconst lines = results.map(c => {\n  const p = c.properties || {};\n  return `- ${p.firstname || ''} ${p.lastname || ''} (${p.email || 'no email'})`;\n}).join('\\n');\n\nreturn [{ json: { contactListText: lines || 'Tidak ada detail contact ditemukan.', count: results.length } }];"
+      },
+      "id": "35fb9e92-3d51-4b79-8a6d-29a477bad719",
+      "name": "FormatContactList",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        960,
+        112
+      ]
+    },
+    {
       "parameters": {
         "method": "POST",
         "url": "https://api.groq.com/openai/v1/chat/completions",
@@ -164,89 +163,231 @@
         "jsonBody": "={{ { \"model\": \"openai/gpt-oss-20b\", \"messages\": [ { \"role\": \"system\", \"content\": \"Kamu asisten sales ops Alurio yang membuat ringkasan singkat dan actionable soal opportunity yang butuh follow-up, bahasa Indonesia, maksimal 3-4 kalimat.\" }, { \"role\": \"user\", \"content\": \"Berikut daftar contact yang masuk segment Stalled Opportunities:\\n\" + $json.contactListText } ] } }}",
         "options": {}
       },
+      "id": "00c0abfe-4dd1-4f9f-9d9b-5179915a0e69",
+      "name": "GenerateFollowUpSummary",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1184,
+        112
+      ],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 1000,
       "credentials": {
         "httpHeaderAuth": {
-          "id": "REPLACE_WITH_CREDENTIAL_ID",
-          "name": "Groq API Key"
+          "id": "I3oQ2hzivS3Lwgla",
+          "name": "GroqAuth"
         }
-      }
+      },
+      "onError": "continueErrorOutput"
     },
     {
-      "id": "set-log-summary",
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "l1",
+              "name": "status",
+              "type": "string",
+              "value": "summary_generated"
+            },
+            {
+              "id": "l2",
+              "name": "summary",
+              "type": "string",
+              "value": "={{ $json.choices?.[0]?.message?.content || '' }}"
+            },
+            {
+              "id": "l3",
+              "name": "generatedAt",
+              "type": "string",
+              "value": "={{ $now.toISO() }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "a29cdc8d-092c-4575-aabc-c1d40561af55",
       "name": "LogSummary",
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
-      "position": [1220, -160],
+      "position": [
+        1408,
+        64
+      ]
+    },
+    {
       "parameters": {
         "assignments": {
           "assignments": [
-            { "id": "l1", "name": "status", "type": "string", "value": "summary_generated" },
-            { "id": "l2", "name": "summary", "type": "string", "value": "={{ $json.choices?.[0]?.message?.content || '' }}" },
-            { "id": "l3", "name": "generatedAt", "type": "string", "value": "={{ $now.toISO() }}" }
+            {
+              "id": "e1",
+              "name": "status",
+              "type": "string",
+              "value": "failed"
+            },
+            {
+              "id": "e2",
+              "name": "error",
+              "type": "string",
+              "value": "={{ $json.error?.message || 'Unknown error' }}"
+            }
           ]
         },
         "options": {}
-      }
-    },
-    {
-      "id": "set-log-error-4",
+      },
+      "id": "64dda232-0265-4940-8a67-1b1c24eb74a9",
       "name": "LogSyncError",
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
-      "position": [740, 160],
+      "position": [
+        1472,
+        512
+      ]
+    },
+    {
       "parameters": {
-        "assignments": {
-          "assignments": [
-            { "id": "e1", "name": "status", "type": "string", "value": "failed" },
-            { "id": "e2", "name": "error", "type": "string", "value": "={{ $json.error?.message || 'Unknown error' }}" }
+        "workflowInputs": {
+          "values": [
+            {
+              "name": "listId"
+            }
           ]
-        },
-        "options": {}
-      }
+        }
+      },
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -160,
+        352
+      ],
+      "id": "1d451a9f-9595-49b4-b702-b3215b2cf30c",
+      "name": "When Executed by Another Workflow"
     }
   ],
+  "pinData": {},
   "connections": {
-    "TriggerManualTest": {
-      "main": [[{ "node": "SetListId", "type": "main", "index": 0 }]]
-    },
-    "SetListId": {
-      "main": [[{ "node": "GetListMembers", "type": "main", "index": 0 }]]
-    },
     "GetListMembers": {
       "main": [
-        [{ "node": "ExtractRecordIds", "type": "main", "index": 0 }],
-        [{ "node": "LogSyncError", "type": "main", "index": 0 }]
+        [
+          {
+            "node": "ExtractRecordIds",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "LogSyncError",
+            "type": "main",
+            "index": 0
+          }
+        ]
       ]
     },
     "ExtractRecordIds": {
-      "main": [[{ "node": "HasMembers", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "HasMembers",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "HasMembers": {
       "main": [
-        [{ "node": "GetContactDetails", "type": "main", "index": 0 }],
-        [{ "node": "NoStalledOpportunities", "type": "main", "index": 0 }]
+        [
+          {
+            "node": "GetContactDetails",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "NoStalledOpportunities",
+            "type": "main",
+            "index": 0
+          }
+        ]
       ]
     },
     "GetContactDetails": {
       "main": [
-        [{ "node": "FormatContactList", "type": "main", "index": 0 }],
-        [{ "node": "LogSyncError", "type": "main", "index": 0 }]
+        [
+          {
+            "node": "FormatContactList",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "LogSyncError",
+            "type": "main",
+            "index": 0
+          }
+        ]
       ]
     },
     "FormatContactList": {
-      "main": [[{ "node": "GenerateFollowUpSummary", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "GenerateFollowUpSummary",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "GenerateFollowUpSummary": {
       "main": [
-        [{ "node": "LogSummary", "type": "main", "index": 0 }],
-        [{ "node": "LogSyncError", "type": "main", "index": 0 }]
+        [
+          {
+            "node": "LogSummary",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "LogSyncError",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "When Executed by Another Workflow": {
+      "main": [
+        [
+          {
+            "node": "GetListMembers",
+            "type": "main",
+            "index": 0
+          }
+        ]
       ]
     }
   },
-  "active": false,
+  "active": true,
   "settings": {
     "executionOrder": "v1",
-    "timezone": "Asia/Jakarta"
+    "binaryMode": "separate",
+    "timeSavedMode": "fixed",
+    "errorWorkflow": "gHRGJ04Ae2yUC8nu",
+    "callerPolicy": "workflowsFromSameOwner",
+    "availableInMCP": false
   },
-  "pinData": {}
+  "versionId": "15ae5dea-71b4-4958-a0cf-7c429a7f039f",
+  "meta": {
+    "instanceId": "8fcfc9178925bdccfcc7900a650c91597411db6c51e3e46206cba7bd3177a16e"
+  },
+  "nodeGroups": [],
+  "id": "vdjDtAe0KT3TpzLr",
+  "tags": []
 }

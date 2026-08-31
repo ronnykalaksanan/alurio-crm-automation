@@ -23,6 +23,7 @@ Setiap folder di repo ini mewakili satu "layer" kemampuan CRM, dibangun bertahap
 | [`05-reporting`](./05-reporting) | Dashboard & reporting dasar | ✅ Selesai |
 | [`06-integration-automation`](./06-integration-automation) | Integrasi n8n ↔ HubSpot + AI enrichment (Groq) | ✅ Selesai |
 | [`07-governance`](./07-governance) | Data governance: dedup, permission | ✅ Selesai |
+| [`08-real-world-extension`](./08-real-world-extension) | Landing page publik, bug fixes produksi, error handling | ✅ Selesai |
 
 ## Kenapa Alurio?
 
@@ -34,4 +35,4 @@ Semua workflow n8n di repo ini mengikuti SOP konsisten: naming convention (`[Lay
 
 ## Status Project
 
-Seluruh layer inti (2, 3, 4, 5, 6, 7) sudah selesai dibangun dan didokumentasikan, dan seluruh workflow individual (HSC-01 s/d HSC-04) sudah disambungkan menjadi sistem otomatis end-to-end lewat dua orchestrator di `00-orchestration` — bukan lagi kumpulan workflow yang harus dijalankan manual satu per satu. Sepanjang proses, beberapa insight penting ditemukan dan didokumentasikan langsung di README masing-masing layer: dari limitasi paket HubSpot Free, native automation lifecycle stage yang meng-override input manual, sampai jebakan logika filter "ALL vs ANY" di reporting.
+Seluruh layer inti (2, 3, 4, 5, 6, 7) sudah selesai dibangun dan didokumentasikan, dan seluruh workflow individual (HSC-01 s/d HSC-04) sudah disambungkan menjadi sistem otomatis end-to-end lewat dua orchestrator di `00-orchestration` — bukan lagi kumpulan workflow yang harus dijalankan manual satu per satu. Sistem ini kemudian diuji dengan skenario dunia nyata (landing page publik sungguhan, lihat `08-real-world-extension`) yang menemukan dan memperbaiki dua bug produksi, plus penambahan error handling terpusat di semua workflow. Sepanjang proses, beberapa insight penting ditemukan dan didokumentasikan langsung di README masing-masing layer: dari limitasi paket HubSpot Free, native automation lifecycle stage yang meng-override input manual, jebakan logika filter "ALL vs ANY" di reporting, sampai keharusan mendefinisikan skema input eksplisit antar sub-workflow di n8n.

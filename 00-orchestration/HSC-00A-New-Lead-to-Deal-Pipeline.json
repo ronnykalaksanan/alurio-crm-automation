@@ -2,146 +2,270 @@
   "name": "HSC-00A - New Lead to Deal Pipeline [Prod]",
   "nodes": [
     {
-      "id": "sticky-readme-00a",
+      "parameters": {
+        "content": "## HSC-00A - New Lead to Deal Pipeline [Prod]\n\n**Owned By:** Ronny Kalaksanan\n**Last Updated:** 2026-08-28\n\n**Description:**\nOrchestrator produksi yang menyambungkan HSC-02 (poll contact baru + enrichment Groq) dan HSC-03 (create deal) jadi satu alur otomatis, sesuai SOP: 'Extract single-responsibility processes into separate sub-workflows using Execute Sub-workflow node'.\n\n**Flow:**\n1. MasterSchedule - jalan tiap 5 menit\n2. CallHSC02 - Execute Sub-workflow HSC-02, dapat list contact yang baru di-enrich\n3. HasNewLeads - cek ada hasil atau tidak\n4. SplitLeads - pecah per contact\n5. CallHSC03 - Execute Sub-workflow HSC-03 per contact, buat deal-nya\n6. LogOrchestrationResult\n\n**PENTING - Prasyarat sebelum dipakai:**\n1. HSC-02 dan HSC-03 harus punya node 'When Executed by Another Workflow' yang tersambung ke alur utamanya (lihat instruksi terpisah).\n2. Setelah import file ini, buka node CallHSC02 dan CallHSC03, pilih ulang workflow yang dimaksud dari dropdown (Workflow ID tidak ikut ter-import, karena ID unik per instance n8n).\n3. Field yang dikirim ke HSC-03 (hubspotContactId, dealname) harus disesuaikan namanya dengan output aktual dari HSC-02 - cek dulu lewat 1x test run.\n\n**Dependencies:**\n- HSC-02, HSC-03 sudah diimport dan credential-nya sudah diset\n- ErrorHandler [Global] workflow (belum disambungkan di iterasi ini)",
+        "height": 792,
+        "width": 752,
+        "color": 4
+      },
+      "id": "947d08ce-c80c-4d48-a1e7-0bbce1ef7902",
       "name": "README",
       "type": "n8n-nodes-base.stickyNote",
       "typeVersion": 1,
-      "position": [-700, -320],
-      "parameters": {
-        "width": 480,
-        "height": 360,
-        "color": 4,
-        "content": "## HSC-00A - New Lead to Deal Pipeline [Prod]\n\n**Owned By:** Ronny Kalaksanan\n**Last Updated:** 2026-08-28\n\n**Description:**\nOrchestrator produksi yang menyambungkan HSC-02 (poll contact baru + enrichment Groq) dan HSC-03 (create deal) jadi satu alur otomatis, sesuai SOP: 'Extract single-responsibility processes into separate sub-workflows using Execute Sub-workflow node'.\n\n**Flow:**\n1. MasterSchedule - jalan tiap 5 menit\n2. CallHSC02 - Execute Sub-workflow HSC-02, dapat list contact yang baru di-enrich\n3. HasNewLeads - cek ada hasil atau tidak\n4. SplitLeads - pecah per contact\n5. CallHSC03 - Execute Sub-workflow HSC-03 per contact, buat deal-nya\n6. LogOrchestrationResult\n\n**PENTING - Prasyarat sebelum dipakai:**\n1. HSC-02 dan HSC-03 harus punya node 'When Executed by Another Workflow' yang tersambung ke alur utamanya (lihat instruksi terpisah).\n2. Setelah import file ini, buka node CallHSC02 dan CallHSC03, pilih ulang workflow yang dimaksud dari dropdown (Workflow ID tidak ikut ter-import, karena ID unik per instance n8n).\n3. Field yang dikirim ke HSC-03 (hubspotContactId, dealname) harus disesuaikan namanya dengan output aktual dari HSC-02 - cek dulu lewat 1x test run.\n\n**Dependencies:**\n- HSC-02, HSC-03 sudah diimport dan credential-nya sudah diset\n- ErrorHandler [Global] workflow (belum disambungkan di iterasi ini)"
-      }
+      "position": [
+        -384,
+        -816
+      ]
     },
     {
-      "id": "schedule-master",
-      "name": "MasterSchedule",
-      "type": "n8n-nodes-base.scheduleTrigger",
-      "typeVersion": 1.2,
-      "position": [-700, 40],
       "parameters": {
         "rule": {
           "interval": [
-            { "field": "minutes", "minutesInterval": 5 }
+            {
+              "field": "minutes"
+            }
           ]
         }
-      }
+      },
+      "id": "9c075d93-ad47-494d-a609-2434f54d3862",
+      "name": "MasterSchedule",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -176,
+        16
+      ]
     },
     {
-      "id": "execute-hsc02",
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "vtRB27JTBzTZD461",
+          "mode": "list",
+          "cachedResultUrl": "/workflow/vtRB27JTBzTZD461",
+          "cachedResultName": "HSC-02 - HubSpot Contact Polling [Dev]"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {},
+          "matchingColumns": [],
+          "schema": [],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true
+        },
+        "options": {}
+      },
+      "id": "c9c1e138-713e-4fb2-9c8c-bd600c85988f",
       "name": "CallHSC02",
       "type": "n8n-nodes-base.executeWorkflow",
       "typeVersion": 1.2,
-      "position": [-440, 40],
+      "position": [
+        96,
+        16
+      ],
       "notesInFlow": true,
-      "notes": "PENTING: setelah import, klik node ini, pilih workflow 'HSC-02 - HubSpot Contact Polling [Dev]' dari dropdown Workflow ID (tidak otomatis ter-set).",
-      "parameters": {
-        "source": "database",
-        "workflowId": {
-          "value": "REPLACE_WITH_HSC02_WORKFLOW_ID",
-          "mode": "list",
-          "cachedResultName": "HSC-02 - HubSpot Contact Polling [Dev]"
-        },
-        "options": {}
-      }
+      "notes": "PENTING: setelah import, klik node ini, pilih workflow 'HSC-02 - HubSpot Contact Polling [Dev]' dari dropdown Workflow ID (tidak otomatis ter-set)."
     },
     {
-      "id": "if-has-leads",
-      "name": "HasNewLeads",
-      "type": "n8n-nodes-base.if",
-      "typeVersion": 2.2,
-      "position": [-180, 40],
       "parameters": {
         "conditions": {
-          "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "loose" },
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 1
+          },
           "conditions": [
             {
               "id": "cond1",
               "leftValue": "={{ $input.all().length }}",
               "rightValue": 0,
-              "operator": { "type": "number", "operation": "gt" }
+              "operator": {
+                "type": "number",
+                "operation": "gt"
+              }
             }
           ],
           "combinator": "and"
         },
         "options": {}
-      }
+      },
+      "id": "2b5ab229-27dd-4aa6-b767-0a8cf8156118",
+      "name": "HasNewLeads",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        352,
+        16
+      ]
     },
     {
-      "id": "noop-no-leads",
+      "parameters": {},
+      "id": "5505a2e2-2b51-4f25-ae82-2b6296b21e35",
       "name": "NoNewLeadsThisRun",
       "type": "n8n-nodes-base.noOp",
       "typeVersion": 1,
-      "position": [60, 200],
-      "parameters": {}
+      "position": [
+        592,
+        176
+      ]
     },
     {
-      "id": "execute-hsc03",
-      "name": "CallHSC03",
-      "type": "n8n-nodes-base.executeWorkflow",
-      "typeVersion": 1.2,
-      "position": [60, -60],
-      "retryOnFail": true,
-      "maxTries": 3,
-      "waitBetweenTries": 1000,
-      "onError": "continueErrorOutput",
-      "notesInFlow": true,
-      "notes": "PENTING: pilih workflow 'HSC-03 - Create Deal for New Lead [Dev]' dari dropdown. Sesuaikan mapping field hubspotContactId dan dealname dengan nama field aktual dari output HSC-02 (cek lewat 1x test run dulu).",
       "parameters": {
-        "source": "database",
         "workflowId": {
-          "value": "REPLACE_WITH_HSC03_WORKFLOW_ID",
+          "__rl": true,
+          "value": "ZGpePTKx1xGeoXhJ",
           "mode": "list",
-          "cachedResultName": "HSC-03 - Create Deal for New Lead [Dev]"
+          "cachedResultUrl": "/workflow/ZGpePTKx1xGeoXhJ",
+          "cachedResultName": "HSC-03 - Create Deal & Update Lifecycle Stage [Dev]"
         },
         "workflowInputs": {
+          "mappingMode": "defineBelow",
           "value": {
             "hubspotContactId": "={{ $json.hubspotContactId }}",
             "dealname": "={{ 'Alurio x ' + $json.firstname + ' ' + $json.lastname + ' - Automation Project' }}"
-          }
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "hubspotContactId",
+              "displayName": "hubspotContactId",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "dealname",
+              "displayName": "dealname",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true
         },
         "options": {}
-      }
+      },
+      "id": "6c228af9-130f-4eda-a4c2-3d2f0cd15c62",
+      "name": "CallHSC03",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        592,
+        -80
+      ],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 1000,
+      "notesInFlow": true,
+      "onError": "continueErrorOutput",
+      "notes": "PENTING: pilih workflow 'HSC-03 - Create Deal for New Lead [Dev]' dari dropdown. Sesuaikan mapping field hubspotContactId dan dealname dengan nama field aktual dari output HSC-02 (cek lewat 1x test run dulu)."
     },
     {
-      "id": "set-log-orchestration",
-      "name": "LogOrchestrationResult",
-      "type": "n8n-nodes-base.set",
-      "typeVersion": 3.4,
-      "position": [300, -60],
       "parameters": {
         "assignments": {
           "assignments": [
-            { "id": "l1", "name": "status", "type": "string", "value": "lead_to_deal_completed" },
-            { "id": "l2", "name": "processedAt", "type": "string", "value": "={{ $now.toISO() }}" }
+            {
+              "id": "l1",
+              "name": "status",
+              "type": "string",
+              "value": "lead_to_deal_completed"
+            },
+            {
+              "id": "l2",
+              "name": "processedAt",
+              "type": "string",
+              "value": "={{ $now.toISO() }}"
+            }
           ]
         },
         "options": {}
-      }
+      },
+      "id": "94799376-cf69-45d6-961f-3717b982e26d",
+      "name": "LogOrchestrationResult",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        832,
+        -80
+      ]
     }
   ],
+  "pinData": {},
   "connections": {
     "MasterSchedule": {
-      "main": [[{ "node": "CallHSC02", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "CallHSC02",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "CallHSC02": {
-      "main": [[{ "node": "HasNewLeads", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "HasNewLeads",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "HasNewLeads": {
       "main": [
-        [{ "node": "CallHSC03", "type": "main", "index": 0 }],
-        [{ "node": "NoNewLeadsThisRun", "type": "main", "index": 0 }]
+        [
+          {
+            "node": "CallHSC03",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "NoNewLeadsThisRun",
+            "type": "main",
+            "index": 0
+          }
+        ]
       ]
     },
     "CallHSC03": {
-      "main": [[{ "node": "LogOrchestrationResult", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "LogOrchestrationResult",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     }
   },
-  "active": false,
+  "active": true,
   "settings": {
     "executionOrder": "v1",
-    "timezone": "Asia/Jakarta"
+    "binaryMode": "separate",
+    "timeSavedMode": "fixed",
+    "errorWorkflow": "gHRGJ04Ae2yUC8nu",
+    "callerPolicy": "workflowsFromSameOwner",
+    "availableInMCP": false
   },
-  "pinData": {}
+  "versionId": "0e264a19-9bcc-4fd9-8c80-dd0bfa6851cf",
+  "meta": {
+    "instanceId": "8fcfc9178925bdccfcc7900a650c91597411db6c51e3e46206cba7bd3177a16e"
+  },
+  "nodeGroups": [],
+  "id": "0pr8Vz4MBOhiND2g",
+  "tags": []
 }

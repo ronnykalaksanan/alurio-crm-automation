@@ -1,55 +1,23 @@
 {
-  "name": "HSC-03 - Create Deal for New Lead [Dev]",
+  "name": "HSC-03 - Create Deal & Update Lifecycle Stage [Dev]",
   "nodes": [
     {
-      "id": "sticky-readme-3",
+      "parameters": {
+        "content": "## HSC-03 - Create Deal & Update Lifecycle Stage [Dev]\n\n**Owned By:** Ronny Kalaksanan\n**Last Updated:** 2026-08-21\n\n**Description:**\nBagian dari Layer 2 (Pipeline & Lifecycle). Untuk contact yang sudah masuk (dari HSC-01/HSC-02), workflow ini membuat Deal baru di pipeline 'Alurio Client Acquisition' pada stage awal (Discovery Call), sekaligus update lifecycle stage contact jadi 'Lead'.\n\n**Flow:**\n1. TriggerManualTest - trigger uji coba (nanti bisa diganti trigger otomatis dari HSC-02)\n2. PrepareTestContactData - isi ID contact + nama deal buat testing\n3. CreateDeal - POST ke HubSpot Deals API, associate ke contact, stage 'appointmentscheduled'\n4. LogSyncResult / LogSyncError\n\n**Dependencies:**\n- Credential: \"HubSpot Private App Token\" (scope: crm.objects.deals.read/write, crm.objects.contacts.write)\n- Pipeline ID: default | Stage ID Discovery Call: appointmentscheduled\n- ErrorHandler [Global] workflow (belum disambungkan di iterasi ini - next step)",
+        "height": 592,
+        "width": 692,
+        "color": 4
+      },
+      "id": "14646159-bb28-4609-a9ac-29d466508ea3",
       "name": "README",
       "type": "n8n-nodes-base.stickyNote",
       "typeVersion": 1,
-      "position": [-500, -280],
-      "parameters": {
-        "width": 440,
-        "height": 340,
-        "color": 4,
-        "content": "## HSC-03 - Create Deal for New Lead [Dev]\n\n**Owned By:** Ronny Kalaksanan\n**Last Updated:** 2026-08-21\n\n**Description:**\nBagian dari Layer 2 (Pipeline & Lifecycle). Untuk contact yang sudah masuk (dari HSC-01/HSC-02), workflow ini membuat Deal baru di pipeline 'Alurio Client Acquisition' pada stage awal (Discovery Call), lalu associate ke contact.\n\n**Catatan penting:** Awalnya workflow ini juga punya node untuk paksa-set lifecycle stage contact secara manual. Ternyata HubSpot punya native automation: begitu contact diasosiasikan ke deal yang masih open, lifecycle stage OTOMATIS di-set ke 'Opportunity' oleh HubSpot sendiri (definisi resmi: 'contact yang terasosiasi dengan deal aktif'), meng-override apa pun yang di-set manual sesudahnya. Diputuskan untuk membiarkan behavior native ini (bukan melawannya) - node update manual dihapus.\n\n**Flow:**\n1. TriggerManualTest - trigger uji coba\n2. PrepareTestContactData - isi ID contact + nama deal buat testing\n3. CreateDeal - POST ke HubSpot Deals API, associate ke contact, stage 'appointmentscheduled' (lifecycle stage contact otomatis jadi 'Opportunity' oleh HubSpot)\n4. LogSyncResult / LogSyncError\n\n**Dependencies:**\n- Credential: \"HubSpot Private App Token\" (scope: crm.objects.deals.read/write, crm.objects.contacts.write)\n- Pipeline ID: default | Stage ID Discovery Call: appointmentscheduled\n- ErrorHandler [Global] workflow (belum disambungkan di iterasi ini - next step)"
-      }
+      "position": [
+        -160,
+        -432
+      ]
     },
     {
-      "id": "trigger-manual-3",
-      "name": "TriggerManualTest",
-      "type": "n8n-nodes-base.manualTrigger",
-      "typeVersion": 1,
-      "position": [-500, 40],
-      "parameters": {}
-    },
-    {
-      "id": "set-test-contact",
-      "name": "PrepareTestContactData",
-      "type": "n8n-nodes-base.set",
-      "typeVersion": 3.4,
-      "position": [-260, 40],
-      "notesInFlow": true,
-      "notes": "Ganti value hubspotContactId dengan ID contact asli dari HubSpot (buka contact di HubSpot, ID-nya ada di URL). dealname bebas diisi.",
-      "parameters": {
-        "assignments": {
-          "assignments": [
-            { "id": "c1", "name": "hubspotContactId", "type": "string", "value": "REPLACE_WITH_REAL_CONTACT_ID" },
-            { "id": "c2", "name": "dealname", "type": "string", "value": "Alurio x Test Lead - Automation Project" }
-          ]
-        },
-        "options": {}
-      }
-    },
-    {
-      "id": "http-create-deal",
-      "name": "CreateDeal",
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.2,
-      "position": [0, 40],
-      "retryOnFail": true,
-      "maxTries": 3,
-      "waitBetweenTries": 1000,
-      "onError": "continueErrorOutput",
       "parameters": {
         "method": "POST",
         "url": "https://api.hubapi.com/crm/v3/objects/deals",
@@ -60,65 +28,158 @@
         "jsonBody": "={{ { \"properties\": { \"dealname\": $json.dealname, \"pipeline\": \"default\", \"dealstage\": \"appointmentscheduled\" }, \"associations\": [ { \"to\": { \"id\": $json.hubspotContactId }, \"types\": [ { \"associationCategory\": \"HUBSPOT_DEFINED\", \"associationTypeId\": 3 } ] } ] } }}",
         "options": {}
       },
+      "id": "2d1584cb-f05d-49e0-91b4-7b82d2e535ea",
+      "name": "CreateDeal",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        224,
+        224
+      ],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 1000,
       "credentials": {
         "httpHeaderAuth": {
-          "id": "REPLACE_WITH_CREDENTIAL_ID",
-          "name": "HubSpot Private App Token"
+          "id": "EXnS942x3zXjSVeW",
+          "name": "HubSpotAuth"
         }
-      }
+      },
+      "onError": "continueErrorOutput"
     },
     {
-      "id": "set-log-success-3",
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "l1",
+              "name": "status",
+              "type": "string",
+              "value": "deal_created_and_lifecycle_updated"
+            },
+            {
+              "id": "l2",
+              "name": "dealId",
+              "type": "string",
+              "value": "={{ $('CreateDeal').item.json.id }}"
+            },
+            {
+              "id": "l3",
+              "name": "syncedAt",
+              "type": "string",
+              "value": "={{ $now.toISO() }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "78ae595d-b85d-4b76-8fd3-5c803269ca4a",
       "name": "LogSyncResult",
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
-      "position": [260, -60],
+      "position": [
+        448,
+        128
+      ]
+    },
+    {
       "parameters": {
         "assignments": {
           "assignments": [
-            { "id": "l1", "name": "status", "type": "string", "value": "deal_created" },
-            { "id": "l2", "name": "dealId", "type": "string", "value": "={{ $json.id }}" },
-            { "id": "l3", "name": "syncedAt", "type": "string", "value": "={{ $now.toISO() }}" }
+            {
+              "id": "e1",
+              "name": "status",
+              "type": "string",
+              "value": "failed"
+            },
+            {
+              "id": "e2",
+              "name": "error",
+              "type": "string",
+              "value": "={{ $json.error?.message || 'Unknown error from HubSpot API' }}"
+            }
           ]
         },
         "options": {}
-      }
-    },
-    {
-      "id": "set-log-error-3",
+      },
+      "id": "ed872b16-abb2-4a80-bb29-f34364ed199a",
       "name": "LogSyncError",
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
-      "position": [260, 160],
+      "position": [
+        448,
+        320
+      ]
+    },
+    {
       "parameters": {
-        "assignments": {
-          "assignments": [
-            { "id": "e1", "name": "status", "type": "string", "value": "failed" },
-            { "id": "e2", "name": "error", "type": "string", "value": "={{ $json.error?.message || 'Unknown error from HubSpot API' }}" }
+        "workflowInputs": {
+          "values": [
+            {
+              "name": "hubspotContactId"
+            },
+            {
+              "name": "dealname"
+            }
           ]
-        },
-        "options": {}
-      }
+        }
+      },
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        0,
+        224
+      ],
+      "id": "5a81518e-f934-47b7-8654-bdbde9cbb5a5",
+      "name": "When Executed by Another Workflow"
     }
   ],
+  "pinData": {},
   "connections": {
-    "TriggerManualTest": {
-      "main": [[{ "node": "PrepareTestContactData", "type": "main", "index": 0 }]]
-    },
-    "PrepareTestContactData": {
-      "main": [[{ "node": "CreateDeal", "type": "main", "index": 0 }]]
-    },
     "CreateDeal": {
       "main": [
-        [{ "node": "LogSyncResult", "type": "main", "index": 0 }],
-        [{ "node": "LogSyncError", "type": "main", "index": 0 }]
+        [
+          {
+            "node": "LogSyncResult",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "LogSyncError",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "When Executed by Another Workflow": {
+      "main": [
+        [
+          {
+            "node": "CreateDeal",
+            "type": "main",
+            "index": 0
+          }
+        ]
       ]
     }
   },
-  "active": false,
+  "active": true,
   "settings": {
     "executionOrder": "v1",
-    "timezone": "Asia/Jakarta"
+    "binaryMode": "separate",
+    "timeSavedMode": "fixed",
+    "errorWorkflow": "gHRGJ04Ae2yUC8nu",
+    "callerPolicy": "workflowsFromSameOwner",
+    "availableInMCP": false
   },
-  "pinData": {}
+  "versionId": "d95d8884-b22d-4bfc-9dd6-4fe393d40162",
+  "meta": {
+    "instanceId": "8fcfc9178925bdccfcc7900a650c91597411db6c51e3e46206cba7bd3177a16e"
+  },
+  "nodeGroups": [],
+  "id": "ZGpePTKx1xGeoXhJ",
+  "tags": []
 }

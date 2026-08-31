@@ -2,103 +2,184 @@
   "name": "HSC-00B - Daily Segment Follow-up [Prod]",
   "nodes": [
     {
-      "id": "sticky-readme-00b",
+      "parameters": {
+        "content": "## HSC-00B - Daily Segment Follow-up [Prod]\n\n**Owned By:** Ronny Kalaksanan\n**Last Updated:** 2026-08-28\n\n**Description:**\nOrchestrator produksi yang memanggil HSC-04 sekali per hari, sekali untuk masing-masing active list (New Leads This Week dan Stalled Opportunities), sesuai SOP sub-workflow yang sama dengan HSC-00A.\n\n**Flow:**\n1. DailySchedule - jalan 1x sehari (jam 8 pagi)\n2. SetBothListIds - buat 2 item: listId 12 dan listId 13\n3. CallHSC04 - Execute Sub-workflow HSC-04, dipanggil 2x (sekali per item)\n4. LogDailySummaryResult\n\n**PENTING - Prasyarat sebelum dipakai:**\n1. HSC-04 harus punya node 'When Executed by Another Workflow' yang tersambung ke node SetListId.\n2. Setelah import, buka node CallHSC04, pilih ulang workflow 'HSC-04 - Stalled Opportunities Follow-up Summary [Dev]' dari dropdown.\n\n**Dependencies:**\n- HSC-04 sudah diimport dan credential-nya sudah diset\n- List ID: New Leads This Week = 12, Stalled Opportunities = 13",
+        "height": 640,
+        "width": 796,
+        "color": 4
+      },
+      "id": "7f1f4092-7d23-4ce9-ba37-6fd8c09d890d",
       "name": "README",
       "type": "n8n-nodes-base.stickyNote",
       "typeVersion": 1,
-      "position": [-620, -280],
-      "parameters": {
-        "width": 460,
-        "height": 320,
-        "color": 4,
-        "content": "## HSC-00B - Daily Segment Follow-up [Prod]\n\n**Owned By:** Ronny Kalaksanan\n**Last Updated:** 2026-08-28\n\n**Description:**\nOrchestrator produksi yang memanggil HSC-04 sekali per hari, sekali untuk masing-masing active list (New Leads This Week dan Stalled Opportunities), sesuai SOP sub-workflow yang sama dengan HSC-00A.\n\n**Flow:**\n1. DailySchedule - jalan 1x sehari (jam 8 pagi)\n2. SetBothListIds - buat 2 item: listId 12 dan listId 13\n3. CallHSC04 - Execute Sub-workflow HSC-04, dipanggil 2x (sekali per item)\n4. LogDailySummaryResult\n\n**PENTING - Prasyarat sebelum dipakai:**\n1. HSC-04 harus punya node 'When Executed by Another Workflow' yang tersambung ke node SetListId.\n2. Setelah import, buka node CallHSC04, pilih ulang workflow 'HSC-04 - Stalled Opportunities Follow-up Summary [Dev]' dari dropdown.\n\n**Dependencies:**\n- HSC-04 sudah diimport dan credential-nya sudah diset\n- List ID: New Leads This Week = 12, Stalled Opportunities = 13"
-      }
+      "position": [
+        1088,
+        112
+      ]
     },
     {
-      "id": "schedule-daily",
-      "name": "DailySchedule",
-      "type": "n8n-nodes-base.scheduleTrigger",
-      "typeVersion": 1.2,
-      "position": [-620, 40],
       "parameters": {
         "rule": {
           "interval": [
-            { "field": "days", "triggerAtHour": 8 }
+            {
+              "triggerAtHour": 8
+            }
           ]
         }
-      }
+      },
+      "id": "e252dfdd-0ba1-4e3d-bfd8-4ec6260d5a8e",
+      "name": "DailySchedule",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        1280,
+        800
+      ]
     },
     {
-      "id": "code-set-both-lists",
+      "parameters": {
+        "jsCode": "return [\n  { json: { listId: '12', listName: 'New Leads This Week' } },\n  { json: { listId: '13', listName: 'Stalled Opportunities' } }\n];"
+      },
+      "id": "4fe0aee5-2431-4af9-8c45-bab2c511c393",
       "name": "SetBothListIds",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [-380, 40],
+      "position": [
+        1520,
+        800
+      ],
       "notesInFlow": true,
-      "notes": "Menghasilkan 2 item terpisah, satu per list ID, supaya CallHSC04 di bawah otomatis jalan 2x (sekali per item, sesuai default behavior n8n).",
-      "parameters": {
-        "jsCode": "return [\n  { json: { listId: '12', listName: 'New Leads This Week' } },\n  { json: { listId: '13', listName: 'Stalled Opportunities' } }\n];"
-      }
+      "notes": "Menghasilkan 2 item terpisah, satu per list ID, supaya CallHSC04 di bawah otomatis jalan 2x (sekali per item, sesuai default behavior n8n)."
     },
     {
-      "id": "execute-hsc04",
-      "name": "CallHSC04",
-      "type": "n8n-nodes-base.executeWorkflow",
-      "typeVersion": 1.2,
-      "position": [-140, 40],
-      "retryOnFail": true,
-      "maxTries": 3,
-      "waitBetweenTries": 1000,
-      "onError": "continueErrorOutput",
-      "notesInFlow": true,
-      "notes": "PENTING: pilih workflow 'HSC-04 - Stalled Opportunities Follow-up Summary [Dev]' dari dropdown. Node ini otomatis dipanggil sekali per item input (2x total, karena SetBothListIds menghasilkan 2 item).",
       "parameters": {
-        "source": "database",
         "workflowId": {
-          "value": "REPLACE_WITH_HSC04_WORKFLOW_ID",
+          "__rl": true,
+          "value": "vdjDtAe0KT3TpzLr",
           "mode": "list",
+          "cachedResultUrl": "/workflow/vdjDtAe0KT3TpzLr",
           "cachedResultName": "HSC-04 - Stalled Opportunities Follow-up Summary [Dev]"
         },
         "workflowInputs": {
+          "mappingMode": "defineBelow",
           "value": {
             "listId": "={{ $json.listId }}"
-          }
+          },
+          "matchingColumns": [
+            "listId"
+          ],
+          "schema": [
+            {
+              "id": "listId",
+              "displayName": "listId",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true
         },
         "options": {}
-      }
+      },
+      "id": "12d26691-29d0-4174-b7bb-fc9fc431173a",
+      "name": "CallHSC04",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        1760,
+        800
+      ],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 1000,
+      "notesInFlow": true,
+      "onError": "continueErrorOutput",
+      "notes": "PENTING: pilih workflow 'HSC-04 - Stalled Opportunities Follow-up Summary [Dev]' dari dropdown. Node ini otomatis dipanggil sekali per item input (2x total, karena SetBothListIds menghasilkan 2 item)."
     },
     {
-      "id": "set-log-daily",
-      "name": "LogDailySummaryResult",
-      "type": "n8n-nodes-base.set",
-      "typeVersion": 3.4,
-      "position": [100, 40],
       "parameters": {
         "assignments": {
           "assignments": [
-            { "id": "l1", "name": "status", "type": "string", "value": "daily_summary_completed" },
-            { "id": "l2", "name": "processedAt", "type": "string", "value": "={{ $now.toISO() }}" }
+            {
+              "id": "l1",
+              "name": "status",
+              "type": "string",
+              "value": "daily_summary_completed"
+            },
+            {
+              "id": "l2",
+              "name": "processedAt",
+              "type": "string",
+              "value": "={{ $now.toISO() }}"
+            }
           ]
         },
         "options": {}
-      }
+      },
+      "id": "17bb7f8b-aecd-4e6c-9d47-2126a64324b5",
+      "name": "LogDailySummaryResult",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        2000,
+        800
+      ]
     }
   ],
+  "pinData": {},
   "connections": {
     "DailySchedule": {
-      "main": [[{ "node": "SetBothListIds", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "SetBothListIds",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "SetBothListIds": {
-      "main": [[{ "node": "CallHSC04", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "CallHSC04",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "CallHSC04": {
-      "main": [[{ "node": "LogDailySummaryResult", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "LogDailySummaryResult",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     }
   },
-  "active": false,
+  "active": true,
   "settings": {
     "executionOrder": "v1",
-    "timezone": "Asia/Jakarta"
+    "binaryMode": "separate",
+    "timeSavedMode": "fixed",
+    "errorWorkflow": "gHRGJ04Ae2yUC8nu",
+    "callerPolicy": "workflowsFromSameOwner",
+    "availableInMCP": false
   },
-  "pinData": {}
+  "versionId": "b5418627-70c9-4e6d-9d89-b228db2b4dc7",
+  "meta": {
+    "instanceId": "8fcfc9178925bdccfcc7900a650c91597411db6c51e3e46206cba7bd3177a16e"
+  },
+  "nodeGroups": [],
+  "id": "4ZVqiw5FW9ieR8Mi",
+  "tags": []
 }

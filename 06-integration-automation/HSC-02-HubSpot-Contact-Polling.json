@@ -2,54 +2,37 @@
   "name": "HSC-02 - HubSpot Contact Polling [Dev]",
   "nodes": [
     {
-      "id": "sticky-readme-2b",
+      "parameters": {
+        "content": "## HSC-02 - HubSpot Contact Polling [Dev]\n\n**Owned By:** Ronny Kalaksanan\n**Last Updated:** 2026-08-20\n\n**Description:**\nVersi polling (bukan webhook) karena action Webhook di HubSpot Workflows butuh Operations Hub Professional. Workflow ini jalan tiap 5 menit, cek contact baru sejak polling terakhir, enrich pakai Groq, lalu log.\n\n**Flow:**\n1. ScheduleTrigger - jalan tiap 5 menit\n2. GetLastPollTime - baca waktu polling terakhir dari static data\n3. PollNewContacts - search contact HubSpot yang createdate > lastPollTime\n4. UpdateLastPollTime - simpan waktu polling sekarang (biar nggak proses ulang)\n5. HasNewContacts - cek ada hasil atau tidak\n6. SplitOut - pecah array hasil jadi item per contact\n7. ExtractContactData - ambil field relevan\n8. GenerateLeadSummary - ringkasan lead pakai Groq (llama-3.1-8b-instant)\n9. LogEnrichedLead - catat hasil (data integrity: log dulu sebelum notifikasi)\n10. NotifyDownstream - placeholder, ganti Slack/Email sesuai kebutuhan\n\n**Dependencies:**\n- Credential: \"HubSpot Private App Token\" (Header Auth) - bisa reuse punya HSC-01\n- Credential: \"Groq API Key\" (Header Auth)\n- ErrorHandler [Global] workflow (belum disambungkan di iterasi ini - next step)",
+        "height": 700,
+        "width": 912,
+        "color": 4
+      },
+      "id": "85ad8977-ded9-4137-b362-a1359b8406bb",
       "name": "README",
       "type": "n8n-nodes-base.stickyNote",
       "typeVersion": 1,
-      "position": [-700, -360],
-      "parameters": {
-        "width": 480,
-        "height": 380,
-        "color": 4,
-        "content": "## HSC-02 - HubSpot Contact Polling [Dev]\n\n**Owned By:** Ronny Kalaksanan\n**Last Updated:** 2026-08-20\n\n**Description:**\nVersi polling (bukan webhook) karena action Webhook di HubSpot Workflows butuh Operations Hub Professional. Workflow ini jalan tiap 5 menit, cek contact baru sejak polling terakhir, enrich pakai Groq, lalu log.\n\n**Flow:**\n1. ScheduleTrigger - jalan tiap 5 menit\n2. GetLastPollTime - baca waktu polling terakhir dari static data\n3. PollNewContacts - search contact HubSpot yang createdate > lastPollTime\n4. UpdateLastPollTime - simpan waktu polling sekarang (biar nggak proses ulang)\n5. HasNewContacts - cek ada hasil atau tidak\n6. SplitOut - pecah array hasil jadi item per contact\n7. ExtractContactData - ambil field relevan\n8. GenerateLeadSummary - ringkasan lead pakai Groq (llama-3.1-8b-instant)\n9. LogEnrichedLead - catat hasil (data integrity: log dulu sebelum notifikasi)\n10. NotifyDownstream - placeholder, ganti Slack/Email sesuai kebutuhan\n\n**Dependencies:**\n- Credential: \"HubSpot Private App Token\" (Header Auth) - bisa reuse punya HSC-01\n- Credential: \"Groq API Key\" (Header Auth)\n- ErrorHandler [Global] workflow (belum disambungkan di iterasi ini - next step)"
-      }
+      "position": [
+        -112,
+        -224
+      ]
     },
     {
-      "id": "schedule-trigger",
-      "name": "ScheduleTrigger",
-      "type": "n8n-nodes-base.scheduleTrigger",
-      "typeVersion": 1.2,
-      "position": [-700, 40],
       "parameters": {
-        "rule": {
-          "interval": [
-            { "field": "minutes", "minutesInterval": 5 }
-          ]
-        }
-      }
-    },
-    {
-      "id": "code-get-lastpoll",
+        "jsCode": "const staticData = $getWorkflowStaticData('global');\nconst lastPollTime = staticData.lastPollTime || (Date.now() - 60 * 60 * 1000);\n\nreturn [{ json: { lastPollTime } }];"
+      },
+      "id": "f650ba74-d89e-4774-b818-2ddaa0d35190",
       "name": "GetLastPollTime",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [-460, 40],
+      "position": [
+        208,
+        640
+      ],
       "notesInFlow": true,
-      "notes": "Default: kalau belum pernah polling, mulai dari 1 jam ke belakang.",
-      "parameters": {
-        "jsCode": "const staticData = $getWorkflowStaticData('global');\nconst lastPollTime = staticData.lastPollTime || (Date.now() - 60 * 60 * 1000);\n\nreturn [{ json: { lastPollTime } }];"
-      }
+      "notes": "Default: kalau belum pernah polling, mulai dari 1 jam ke belakang."
     },
     {
-      "id": "http-poll",
-      "name": "PollNewContacts",
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.2,
-      "position": [-200, 40],
-      "retryOnFail": true,
-      "maxTries": 3,
-      "waitBetweenTries": 1000,
-      "onError": "continueErrorOutput",
       "parameters": {
         "method": "POST",
         "url": "https://api.hubapi.com/crm/v3/objects/contacts/search",
@@ -60,88 +43,114 @@
         "jsonBody": "={{ { \"filterGroups\": [ { \"filters\": [ { \"propertyName\": \"createdate\", \"operator\": \"GT\", \"value\": String($json.lastPollTime) } ] } ], \"sorts\": [ { \"propertyName\": \"createdate\", \"direction\": \"ASCENDING\" } ], \"properties\": [\"email\", \"firstname\", \"lastname\", \"createdate\"], \"limit\": 100 } }}",
         "options": {}
       },
+      "id": "eb4b5e84-45fa-4ca3-99f1-d4e506a0cc57",
+      "name": "PollNewContacts",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        432,
+        640
+      ],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 1000,
       "credentials": {
         "httpHeaderAuth": {
-          "id": "REPLACE_WITH_CREDENTIAL_ID",
-          "name": "HubSpot Private App Token"
+          "id": "EXnS942x3zXjSVeW",
+          "name": "HubSpotAuth"
         }
-      }
+      },
+      "onError": "continueErrorOutput"
     },
     {
-      "id": "code-update-lastpoll",
+      "parameters": {
+        "jsCode": "const staticData = $getWorkflowStaticData('global');\nstaticData.lastPollTime = Date.now();\n\nreturn $input.all();"
+      },
+      "id": "80764e7b-79f0-4230-adb4-936cd9e7a832",
       "name": "UpdateLastPollTime",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [40, 40],
+      "position": [
+        656,
+        640
+      ],
       "notesInFlow": true,
-      "notes": "Simpan timestamp SEKARANG sebagai batas polling berikutnya, supaya contact yang sudah diproses nggak keambil ulang di run berikutnya.",
-      "parameters": {
-        "jsCode": "const staticData = $getWorkflowStaticData('global');\nstaticData.lastPollTime = Date.now();\n\nreturn $input.all();"
-      }
+      "notes": "Simpan timestamp SEKARANG sebagai batas polling berikutnya, supaya contact yang sudah diproses nggak keambil ulang di run berikutnya."
     },
     {
-      "id": "if-has-contacts",
-      "name": "HasNewContacts",
-      "type": "n8n-nodes-base.if",
-      "typeVersion": 2.2,
-      "position": [280, 40],
       "parameters": {
         "conditions": {
-          "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "loose" },
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
           "conditions": [
             {
               "id": "cond1",
               "leftValue": "={{ $json.results?.length || 0 }}",
               "rightValue": 0,
-              "operator": { "type": "number", "operation": "gt" }
+              "operator": {
+                "type": "number",
+                "operation": "gt"
+              }
             }
           ],
           "combinator": "and"
         },
         "options": {}
-      }
+      },
+      "id": "f9c9e928-414c-4922-b41b-5459b2ea4a26",
+      "name": "HasNewContacts",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        880,
+        640
+      ]
     },
     {
-      "id": "noop-no-new",
+      "parameters": {},
+      "id": "be1ae108-e67c-4c2b-8301-e74945aadf87",
       "name": "NoNewContacts",
       "type": "n8n-nodes-base.noOp",
       "typeVersion": 1,
-      "position": [520, 200],
-      "parameters": {}
+      "position": [
+        1104,
+        736
+      ]
     },
     {
-      "id": "split-out",
-      "name": "SplitOut",
-      "type": "n8n-nodes-base.splitOut",
-      "typeVersion": 1,
-      "position": [520, -60],
       "parameters": {
         "fieldToSplitOut": "results",
         "options": {}
-      }
+      },
+      "id": "8787b4ed-9225-4da8-b082-57afb20b78d9",
+      "name": "SplitOut",
+      "type": "n8n-nodes-base.splitOut",
+      "typeVersion": 1,
+      "position": [
+        1104,
+        544
+      ]
     },
     {
-      "id": "code-extract-2",
+      "parameters": {
+        "jsCode": "const item = $input.first().json;\nconst props = item.properties || {};\n\nconst contact = {\n  email: props.email || '',\n  firstname: props.firstname || '',\n  lastname: props.lastname || '',\n  hubspotContactId: item.id || null,\n  createdAt: props.createdate || null\n};\n\nif (!contact.email) {\n  throw new Error('ExtractContactData: field email tidak ditemukan pada contact ' + contact.hubspotContactId);\n}\n\nreturn [{ json: contact }];"
+      },
+      "id": "3b571f91-6f36-4e0e-b73e-e4f0c85747e7",
       "name": "ExtractContactData",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [760, -60],
+      "position": [
+        1328,
+        544
+      ],
       "notesInFlow": true,
-      "notes": "Bentuk data dari search API: { id, properties: { email, firstname, lastname, createdate } }",
-      "parameters": {
-        "jsCode": "const item = $input.first().json;\nconst props = item.properties || {};\n\nconst contact = {\n  email: props.email || '',\n  firstname: props.firstname || '',\n  lastname: props.lastname || '',\n  hubspotContactId: item.id || null,\n  createdAt: props.createdate || null\n};\n\nif (!contact.email) {\n  throw new Error('ExtractContactData: field email tidak ditemukan pada contact ' + contact.hubspotContactId);\n}\n\nreturn [{ json: contact }];"
-      }
+      "notes": "Bentuk data dari search API: { id, properties: { email, firstname, lastname, createdate } }"
     },
     {
-      "id": "http-groq-2",
-      "name": "GenerateLeadSummary",
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.2,
-      "position": [1000, -60],
-      "retryOnFail": true,
-      "maxTries": 3,
-      "waitBetweenTries": 1000,
-      "onError": "continueErrorOutput",
       "parameters": {
         "method": "POST",
         "url": "https://api.groq.com/openai/v1/chat/completions",
@@ -149,102 +158,280 @@
         "genericAuthType": "httpHeaderAuth",
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ { \"model\": \"llama-3.1-8b-instant\", \"messages\": [ { \"role\": \"system\", \"content\": \"Kamu asisten yang meringkas data lead CRM dalam 1-2 kalimat singkat dan netral, bahasa Indonesia.\" }, { \"role\": \"user\", \"content\": \"Nama: \" + $json.firstname + \" \" + $json.lastname + \"\\nEmail: \" + $json.email } ] } }}",
+        "jsonBody": "={{ { \"model\": \"openai/gpt-oss-20b\", \"messages\": [ { \"role\": \"system\", \"content\": \"Kamu asisten yang meringkas data lead CRM dalam 1-2 kalimat singkat dan netral, bahasa Indonesia.\" }, { \"role\": \"user\", \"content\": \"Nama: \" + $json.firstname + \" \" + $json.lastname + \"\\nEmail: \" + $json.email } ] } }}",
         "options": {}
       },
+      "id": "8a8a0cc3-46d9-4b79-b450-4ea8b5531e04",
+      "name": "GenerateLeadSummary",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1552,
+        544
+      ],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 1000,
       "credentials": {
         "httpHeaderAuth": {
-          "id": "REPLACE_WITH_CREDENTIAL_ID",
-          "name": "Groq API Key"
+          "id": "I3oQ2hzivS3Lwgla",
+          "name": "GroqAuth"
         }
-      }
+      },
+      "onError": "continueErrorOutput"
     },
     {
-      "id": "set-log-enriched-2",
-      "name": "LogEnrichedLead",
-      "type": "n8n-nodes-base.set",
-      "typeVersion": 3.4,
-      "position": [1260, -160],
       "parameters": {
         "assignments": {
           "assignments": [
-            { "id": "l1", "name": "status", "type": "string", "value": "enriched" },
-            { "id": "l2", "name": "summary", "type": "string", "value": "={{ $json.choices?.[0]?.message?.content || '' }}" },
-            { "id": "l3", "name": "loggedAt", "type": "string", "value": "={{ $now.toISO() }}" }
+            {
+              "id": "e1",
+              "name": "status",
+              "type": "string",
+              "value": "failed"
+            },
+            {
+              "id": "e2",
+              "name": "error",
+              "type": "string",
+              "value": "={{ $json.error?.message || 'Unknown error from Groq API' }}"
+            }
           ]
         },
         "options": {}
-      }
-    },
-    {
-      "id": "set-log-error-3",
+      },
+      "id": "5cc5e9d5-7b88-41bd-acac-642c2fb0ab53",
       "name": "LogSyncError",
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
-      "position": [1260, 60],
-      "parameters": {
-        "assignments": {
-          "assignments": [
-            { "id": "e1", "name": "status", "type": "string", "value": "failed" },
-            { "id": "e2", "name": "error", "type": "string", "value": "={{ $json.error?.message || 'Unknown error from Groq API' }}" }
-          ]
-        },
-        "options": {}
-      }
+      "position": [
+        1776,
+        640
+      ]
     },
     {
-      "id": "noop-notify-2",
+      "parameters": {},
+      "id": "11341c51-4023-46da-8d2e-805d4a07893e",
       "name": "NotifyDownstream",
       "type": "n8n-nodes-base.noOp",
       "typeVersion": 1,
-      "position": [1500, -160],
+      "position": [
+        2000,
+        448
+      ],
       "notesInFlow": true,
-      "notes": "Placeholder. Ganti dengan node Slack/Email/dsb kalau mau kirim notifikasi beneran.",
-      "parameters": {}
+      "notes": "Placeholder. Ganti dengan node Slack/Email/dsb kalau mau kirim notifikasi beneran."
+    },
+    {
+      "parameters": {
+        "inputSource": "passthrough"
+      },
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -16,
+        640
+      ],
+      "id": "201de3b7-3876-4404-bdee-b173d0067e6c",
+      "name": "When Executed by Another Workflow"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "l1",
+              "name": "status",
+              "type": "string",
+              "value": "enriched"
+            },
+            {
+              "id": "l2",
+              "name": "summary",
+              "type": "string",
+              "value": "={{ $json.choices?.[0]?.message?.content || '' }}"
+            },
+            {
+              "id": "l3",
+              "name": "loggedAt",
+              "type": "string",
+              "value": "={{ $now.toISO() }}"
+            },
+            {
+              "id": "l4",
+              "name": "hubspotContactId",
+              "type": "string",
+              "value": "={{ $('ExtractContactData').item.json.hubspotContactId }}"
+            },
+            {
+              "id": "l5",
+              "name": "firstname",
+              "type": "string",
+              "value": "={{ $('ExtractContactData').item.json.firstname }}"
+            },
+            {
+              "id": "l6",
+              "name": "lastname",
+              "type": "string",
+              "value": "={{ $('ExtractContactData').item.json.lastname }}"
+            },
+            {
+              "id": "l7",
+              "name": "email",
+              "type": "string",
+              "value": "={{ $('ExtractContactData').item.json.email }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "69eacc9b-708a-4155-bcd7-07f37f3d853c",
+      "name": "LogEnrichedLead1",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1792,
+        448
+      ]
     }
   ],
+  "pinData": {},
   "connections": {
-    "ScheduleTrigger": {
-      "main": [[{ "node": "GetLastPollTime", "type": "main", "index": 0 }]]
-    },
     "GetLastPollTime": {
-      "main": [[{ "node": "PollNewContacts", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "PollNewContacts",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "PollNewContacts": {
       "main": [
-        [{ "node": "UpdateLastPollTime", "type": "main", "index": 0 }],
-        [{ "node": "UpdateLastPollTime", "type": "main", "index": 0 }]
+        [
+          {
+            "node": "UpdateLastPollTime",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "UpdateLastPollTime",
+            "type": "main",
+            "index": 0
+          }
+        ]
       ]
     },
     "UpdateLastPollTime": {
-      "main": [[{ "node": "HasNewContacts", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "HasNewContacts",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "HasNewContacts": {
       "main": [
-        [{ "node": "SplitOut", "type": "main", "index": 0 }],
-        [{ "node": "NoNewContacts", "type": "main", "index": 0 }]
+        [
+          {
+            "node": "SplitOut",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "NoNewContacts",
+            "type": "main",
+            "index": 0
+          }
+        ]
       ]
     },
     "SplitOut": {
-      "main": [[{ "node": "ExtractContactData", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "ExtractContactData",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "ExtractContactData": {
-      "main": [[{ "node": "GenerateLeadSummary", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "GenerateLeadSummary",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "GenerateLeadSummary": {
       "main": [
-        [{ "node": "LogEnrichedLead", "type": "main", "index": 0 }],
-        [{ "node": "LogSyncError", "type": "main", "index": 0 }]
+        [
+          {
+            "node": "LogEnrichedLead1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "LogSyncError",
+            "type": "main",
+            "index": 0
+          }
+        ]
       ]
     },
-    "LogEnrichedLead": {
-      "main": [[{ "node": "NotifyDownstream", "type": "main", "index": 0 }]]
+    "When Executed by Another Workflow": {
+      "main": [
+        [
+          {
+            "node": "GetLastPollTime",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "LogEnrichedLead1": {
+      "main": [
+        [
+          {
+            "node": "NotifyDownstream",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     }
   },
-  "active": false,
+  "active": true,
   "settings": {
     "executionOrder": "v1",
-    "timezone": "Asia/Jakarta"
+    "binaryMode": "separate",
+    "timeSavedMode": "fixed",
+    "errorWorkflow": "gHRGJ04Ae2yUC8nu",
+    "callerPolicy": "workflowsFromSameOwner",
+    "availableInMCP": false
   },
-  "pinData": {}
+  "versionId": "8ffefbaf-960a-46a9-87bf-2fcda81b54ad",
+  "meta": {
+    "instanceId": "8fcfc9178925bdccfcc7900a650c91597411db6c51e3e46206cba7bd3177a16e"
+  },
+  "nodeGroups": [],
+  "id": "vtRB27JTBzTZD461",
+  "tags": []
 }

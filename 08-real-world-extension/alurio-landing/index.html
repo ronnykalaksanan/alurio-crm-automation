@@ -1,0 +1,448 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Alurio — Automation Consultancy</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&family=Inter:wght@400;500;600&display=swap');
+
+  :root {
+    --ink: #0E1420;
+    --ink-soft: #4A5568;
+    --paper: #F7F8FA;
+    --line: #D8DEE8;
+    --flow-a: #FF6B4A;
+    --flow-b: #6C5CE7;
+    --flow-c: #00C2A8;
+    --card: #FFFFFF;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--paper);
+    color: var(--ink);
+    font-family: 'Inter', sans-serif;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    * { animation: none !important; transition: none !important; }
+  }
+
+  .wrap { max-width: 1080px; margin: 0 auto; padding: 0 28px; }
+
+  header {
+    padding: 28px 0 0;
+  }
+  .brand {
+    font-family: 'Space Grotesk', sans-serif;
+    font-weight: 700;
+    font-size: 20px;
+    letter-spacing: -0.02em;
+  }
+  .brand span { color: var(--flow-b); }
+
+  .hero {
+    padding: 64px 0 40px;
+    display: grid;
+    grid-template-columns: 1.1fr 0.9fr;
+    gap: 48px;
+    align-items: center;
+  }
+  @media (max-width: 860px) {
+    .hero { grid-template-columns: 1fr; padding-top: 40px; }
+  }
+
+  .eyebrow {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 13px;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--ink-soft);
+    margin-bottom: 18px;
+  }
+
+  h1 {
+    font-family: 'Space Grotesk', sans-serif;
+    font-weight: 700;
+    font-size: clamp(36px, 5.2vw, 58px);
+    line-height: 1.04;
+    letter-spacing: -0.03em;
+    margin-bottom: 22px;
+  }
+  h1 .accent {
+    background: linear-gradient(90deg, var(--flow-a), var(--flow-b));
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+
+  .lede {
+    font-size: 18px;
+    color: var(--ink-soft);
+    max-width: 46ch;
+    margin-bottom: 8px;
+  }
+
+  /* Signature element: flow visualization — scattered dots resolving into a smooth path */
+  .flow-viz {
+    position: relative;
+    height: 320px;
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 18px;
+    overflow: hidden;
+  }
+  .flow-viz svg { width: 100%; height: 100%; }
+
+  .scatter-dot {
+    fill: var(--ink-soft);
+    opacity: 0.35;
+  }
+
+  .flow-path {
+    fill: none;
+    stroke: url(#flowGradient);
+    stroke-width: 2.5;
+    stroke-linecap: round;
+    stroke-dasharray: 620;
+    stroke-dashoffset: 620;
+    animation: draw 2.6s ease forwards 0.4s;
+  }
+  @keyframes draw {
+    to { stroke-dashoffset: 0; }
+  }
+
+  .flow-node {
+    fill: var(--card);
+    stroke: var(--flow-b);
+    stroke-width: 2;
+    opacity: 0;
+    animation: pop 0.5s ease forwards;
+  }
+  .flow-node:nth-of-type(1) { animation-delay: 0.6s; }
+  .flow-node:nth-of-type(2) { animation-delay: 1.4s; }
+  .flow-node:nth-of-type(3) { animation-delay: 2.2s; }
+  @keyframes pop {
+    from { opacity: 0; r: 0; }
+    to { opacity: 1; }
+  }
+
+  .flow-caption {
+    position: absolute;
+    bottom: 16px;
+    left: 20px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12px;
+    color: var(--ink-soft);
+  }
+
+  main .section {
+    padding: 40px 0;
+  }
+
+  .divider {
+    height: 1px;
+    background: var(--line);
+  }
+
+  .work-list {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 20px;
+    margin-top: 28px;
+  }
+  @media (max-width: 700px) {
+    .work-list { grid-template-columns: 1fr; }
+  }
+  .work-item {
+    padding: 20px;
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    background: var(--card);
+  }
+  .work-item .tag {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    color: var(--flow-c);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-bottom: 10px;
+    display: block;
+  }
+  .work-item h3 {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 17px;
+    margin-bottom: 6px;
+  }
+  .work-item p {
+    font-size: 14px;
+    color: var(--ink-soft);
+  }
+
+  .form-section {
+    padding: 56px 0 80px;
+  }
+  .form-head h2 {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: clamp(26px, 3.4vw, 34px);
+    letter-spacing: -0.02em;
+    margin-bottom: 10px;
+  }
+  .form-head p {
+    color: var(--ink-soft);
+    max-width: 56ch;
+    margin-bottom: 32px;
+  }
+
+  form {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    padding: 32px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+  }
+  @media (max-width: 700px) {
+    form { grid-template-columns: 1fr; padding: 22px; }
+  }
+  .field { display: flex; flex-direction: column; gap: 6px; }
+  .field.full { grid-column: 1 / -1; }
+
+  label {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12px;
+    color: var(--ink-soft);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+
+  input, select, textarea {
+    font-family: 'Inter', sans-serif;
+    font-size: 15px;
+    padding: 11px 13px;
+    border: 1px solid var(--line);
+    border-radius: 9px;
+    background: var(--paper);
+    color: var(--ink);
+  }
+  textarea { resize: vertical; min-height: 76px; }
+
+  input:focus, select:focus, textarea:focus {
+    outline: 2px solid var(--flow-b);
+    outline-offset: 1px;
+  }
+
+  .submit-row {
+    grid-column: 1 / -1;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-top: 6px;
+  }
+
+  button {
+    font-family: 'Space Grotesk', sans-serif;
+    font-weight: 600;
+    font-size: 15px;
+    padding: 13px 26px;
+    border: none;
+    border-radius: 9px;
+    background: var(--ink);
+    color: #fff;
+    cursor: pointer;
+    transition: opacity 0.15s ease;
+  }
+  button:hover { opacity: 0.85; }
+  button:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  .status-msg {
+    font-size: 14px;
+    font-family: 'IBM Plex Mono', monospace;
+  }
+  .status-msg.ok { color: var(--flow-c); }
+  .status-msg.err { color: var(--flow-a); }
+
+  footer {
+    padding: 28px 0 40px;
+    border-top: 1px solid var(--line);
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12px;
+    color: var(--ink-soft);
+  }
+</style>
+</head>
+<body>
+
+<header class="wrap">
+  <div class="brand">Alur<span>io</span></div>
+</header>
+
+<div class="wrap">
+  <section class="hero">
+    <div>
+      <div class="eyebrow">Automation Consultancy</div>
+      <h1>Kerjaan berulang tim kamu, kami ubah jadi <span class="accent">alur yang mengalir sendiri</span>.</h1>
+      <p class="lede">Alurio merancang dan membangun automation untuk proses yang selama ini dikerjakan manual — dari input data, follow-up lead, sampai laporan yang harus disusun ulang tiap minggu.</p>
+    </div>
+    <div class="flow-viz">
+      <svg viewBox="0 0 400 320" preserveAspectRatio="xMidYMid meet">
+        <defs>
+          <linearGradient id="flowGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+            <stop offset="0%" stop-color="#FF6B4A"/>
+            <stop offset="55%" stop-color="#6C5CE7"/>
+            <stop offset="100%" stop-color="#00C2A8"/>
+          </linearGradient>
+        </defs>
+        <circle class="scatter-dot" cx="38" cy="60" r="4"/>
+        <circle class="scatter-dot" cx="70" cy="110" r="3"/>
+        <circle class="scatter-dot" cx="30" cy="160" r="5"/>
+        <circle class="scatter-dot" cx="55" cy="220" r="3"/>
+        <circle class="scatter-dot" cx="90" cy="260" r="4"/>
+        <circle class="scatter-dot" cx="45" cy="35" r="3"/>
+        <path class="flow-path" d="M50,60 C 120,40 160,140 220,150 S 320,170 360,180"/>
+        <circle class="flow-node" cx="50" cy="60" r="7"/>
+        <circle class="flow-node" cx="220" cy="150" r="7"/>
+        <circle class="flow-node" cx="360" cy="180" r="7"/>
+      </svg>
+      <div class="flow-caption">manual → terhubung → mengalir</div>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <section class="section">
+    <div class="eyebrow">Yang biasa kami tangani</div>
+    <div class="work-list">
+      <div class="work-item">
+        <span class="tag">Lead & CRM</span>
+        <h3>Follow-up yang nyasar di spreadsheet</h3>
+        <p>Lead masuk otomatis tersimpan, diberi prioritas, dan diingatkan sebelum keburu dingin.</p>
+      </div>
+      <div class="work-item">
+        <span class="tag">Data Entry</span>
+        <h3>Input berulang antar sistem</h3>
+        <p>Data yang harus disalin manual dari satu tool ke tool lain, kami sambungkan otomatis.</p>
+      </div>
+      <div class="work-item">
+        <span class="tag">Pelaporan</span>
+        <h3>Laporan mingguan yang disusun ulang tiap kali</h3>
+        <p>Dashboard yang update sendiri, bukan rekap manual tiap Jumat sore.</p>
+      </div>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <section class="form-section">
+    <div class="form-head">
+      <h2>Ceritakan proses yang ingin kamu otomatisasi</h2>
+      <p>Kami baca setiap jawaban sebelum menghubungi — bukan template balasan generik.</p>
+    </div>
+
+    <form id="leadForm">
+      <div class="field">
+        <label for="name">Nama</label>
+        <input type="text" id="name" name="name" required>
+      </div>
+      <div class="field">
+        <label for="email">Email</label>
+        <input type="email" id="email" name="email" required>
+      </div>
+      <div class="field">
+        <label for="company">Nama Perusahaan</label>
+        <input type="text" id="company" name="company" required>
+      </div>
+      <div class="field">
+        <label for="teamSize">Ukuran Tim</label>
+        <select id="teamSize" name="teamSize" required>
+          <option value="">Pilih ukuran tim</option>
+          <option value="1-5">1–5 orang</option>
+          <option value="6-20">6–20 orang</option>
+          <option value="21-50">21–50 orang</option>
+          <option value="50+">50+ orang</option>
+        </select>
+      </div>
+      <div class="field full">
+        <label for="process">Proses apa yang paling ingin kamu otomatisasi?</label>
+        <textarea id="process" name="process" placeholder="Contoh: follow-up lead yang masih dicatat manual di Excel, sering kelewat" required></textarea>
+      </div>
+      <div class="field">
+        <label for="tools">Tools yang tim kamu pakai sekarang</label>
+        <input type="text" id="tools" name="tools" placeholder="Contoh: Google Sheets, WhatsApp Business">
+      </div>
+      <div class="field">
+        <label for="urgency">Kapan mau mulai?</label>
+        <select id="urgency" name="urgency" required>
+          <option value="">Pilih urgensi</option>
+          <option value="Minggu ini">Minggu ini</option>
+          <option value="Bulan ini">Bulan ini</option>
+          <option value="Masih explore">Masih explore dulu</option>
+        </select>
+      </div>
+
+      <div class="submit-row">
+        <button type="submit" id="submitBtn">Kirim ke Alurio</button>
+        <span class="status-msg" id="statusMsg"></span>
+      </div>
+    </form>
+  </section>
+</div>
+
+<footer class="wrap">
+  Alurio — studi kasus automation consultancy, dibangun sebagai portofolio teknis.
+</footer>
+
+<script>
+  // GANTI URL INI dengan Production URL dari node Webhook di workflow HSC-01 kamu setelah ditambahkan.
+  const WEBHOOK_URL = "https://hifago.app.n8n.cloud/webhook/alurio-lead-form";
+
+  const form = document.getElementById('leadForm');
+  const btn = document.getElementById('submitBtn');
+  const statusMsg = document.getElementById('statusMsg');
+
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    statusMsg.textContent = '';
+    statusMsg.className = 'status-msg';
+    btn.disabled = true;
+    btn.textContent = 'Mengirim...';
+
+    const payload = {
+      firstname: document.getElementById('name').value,
+      email: document.getElementById('email').value,
+      company: document.getElementById('company').value,
+      teamSize: document.getElementById('teamSize').value,
+      process: document.getElementById('process').value,
+      tools: document.getElementById('tools').value,
+      urgency: document.getElementById('urgency').value
+    };
+
+    try {
+      const res = await fetch(WEBHOOK_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+
+      if (!res.ok) throw new Error('Server merespons dengan error');
+
+      statusMsg.textContent = 'Terkirim. Tim Alurio akan menghubungi kamu.';
+      statusMsg.className = 'status-msg ok';
+      form.reset();
+    } catch (err) {
+      statusMsg.textContent = 'Gagal mengirim. Coba lagi sebentar lagi.';
+      statusMsg.className = 'status-msg err';
+    } finally {
+      btn.disabled = false;
+      btn.textContent = 'Kirim ke Alurio';
+    }
+  });
+</script>
+
+</body>
+</html>
