@@ -2,37 +2,54 @@
   "name": "HSC-02 - HubSpot Contact Polling [Dev]",
   "nodes": [
     {
-      "parameters": {
-        "content": "## HSC-02 - HubSpot Contact Polling [Dev]\n\n**Owned By:** Ronny Kalaksanan\n**Last Updated:** 2026-08-20\n\n**Description:**\nVersi polling (bukan webhook) karena action Webhook di HubSpot Workflows butuh Operations Hub Professional. Workflow ini jalan tiap 5 menit, cek contact baru sejak polling terakhir, enrich pakai Groq, lalu log.\n\n**Flow:**\n1. ScheduleTrigger - jalan tiap 5 menit\n2. GetLastPollTime - baca waktu polling terakhir dari static data\n3. PollNewContacts - search contact HubSpot yang createdate > lastPollTime\n4. UpdateLastPollTime - simpan waktu polling sekarang (biar nggak proses ulang)\n5. HasNewContacts - cek ada hasil atau tidak\n6. SplitOut - pecah array hasil jadi item per contact\n7. ExtractContactData - ambil field relevan\n8. GenerateLeadSummary - ringkasan lead pakai Groq (llama-3.1-8b-instant)\n9. LogEnrichedLead - catat hasil (data integrity: log dulu sebelum notifikasi)\n10. NotifyDownstream - placeholder, ganti Slack/Email sesuai kebutuhan\n\n**Dependencies:**\n- Credential: \"HubSpot Private App Token\" (Header Auth) - bisa reuse punya HSC-01\n- Credential: \"Groq API Key\" (Header Auth)\n- ErrorHandler [Global] workflow (belum disambungkan di iterasi ini - next step)",
-        "height": 700,
-        "width": 912,
-        "color": 4
-      },
-      "id": "85ad8977-ded9-4137-b362-a1359b8406bb",
+      "id": "sticky-readme-2b",
       "name": "README",
       "type": "n8n-nodes-base.stickyNote",
       "typeVersion": 1,
-      "position": [
-        -112,
-        -224
-      ]
+      "position": [-700, -360],
+      "parameters": {
+        "width": 520,
+        "height": 440,
+        "color": 4,
+        "content": "## HSC-02 - HubSpot Contact Polling [Dev]\n\n**Owned By:** Ronny Kalaksanan\n**Last Updated:** 2026-08-30\n\n**Description:**\nPolling contact baru tiap 5 menit, lalu pakai Groq untuk (1) menilai kualifikasi lead berdasarkan jawaban form (proses, tools, ukuran tim, urgensi), dan (2) membuat draft email outreach personal. Draft disimpan sebagai Note di HubSpot untuk direview manual sebelum dikirim - BUKAN dikirim otomatis.\n\n**Flow:**\n1. ScheduleTrigger - jalan tiap 5 menit\n2. GetLastPollTime - baca waktu polling terakhir dari static data\n3. PollNewContacts - search contact HubSpot yang createdate > lastPollTime, termasuk field kualifikasi\n4. UpdateLastPollTime - simpan waktu polling sekarang\n5. HasNewContacts - cek ada hasil atau tidak\n6. SplitOut - pecah array hasil jadi item per contact\n7. ExtractContactData - ambil field relevan termasuk data kualifikasi\n8. GenerateLeadSummary - Groq nilai kualifikasi + tulis draft outreach email\n9. ParseAIOutput - pisahkan bagian kualifikasi dan draft email dari respons AI\n10. CreateHubSpotNote - simpan draft sebagai Note di contact (untuk direview manual)\n11. LogEnrichedLead / LogSyncError\n\n**Dependencies:**\n- Credential: \"HubSpot Private App Token\" (scope tambahan: crm.objects.notes.write)\n- Credential: \"Groq API Key\"\n- Custom properties: proses_yang_ingin_diotomatisasi, tools_digunakan, ukuran_tim, urgensi, company\n- PENTING: draft email TIDAK dikirim otomatis, sengaja hanya disimpan sebagai Note untuk direview manusia dulu"
+      }
     },
     {
+      "id": "schedule-trigger",
+      "name": "ScheduleTrigger",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [-700, 40],
       "parameters": {
-        "jsCode": "const staticData = $getWorkflowStaticData('global');\nconst lastPollTime = staticData.lastPollTime || (Date.now() - 60 * 60 * 1000);\n\nreturn [{ json: { lastPollTime } }];"
-      },
-      "id": "f650ba74-d89e-4774-b818-2ddaa0d35190",
+        "rule": {
+          "interval": [
+            { "field": "minutes", "minutesInterval": 5 }
+          ]
+        }
+      }
+    },
+    {
+      "id": "code-get-lastpoll",
       "name": "GetLastPollTime",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [
-        208,
-        640
-      ],
+      "position": [-460, 40],
       "notesInFlow": true,
-      "notes": "Default: kalau belum pernah polling, mulai dari 1 jam ke belakang."
+      "notes": "Default: kalau belum pernah polling, mulai dari 1 jam ke belakang.",
+      "parameters": {
+        "jsCode": "const staticData = $getWorkflowStaticData('global');\nconst lastPollTime = staticData.lastPollTime || (Date.now() - 60 * 60 * 1000);\n\nreturn [{ json: { lastPollTime } }];"
+      }
     },
     {
+      "id": "http-poll",
+      "name": "PollNewContacts",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [-200, 40],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 1000,
+      "onError": "continueErrorOutput",
       "parameters": {
         "method": "POST",
         "url": "https://api.hubapi.com/crm/v3/objects/contacts/search",
@@ -40,117 +57,93 @@
         "genericAuthType": "httpHeaderAuth",
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ { \"filterGroups\": [ { \"filters\": [ { \"propertyName\": \"createdate\", \"operator\": \"GT\", \"value\": String($json.lastPollTime) } ] } ], \"sorts\": [ { \"propertyName\": \"createdate\", \"direction\": \"ASCENDING\" } ], \"properties\": [\"email\", \"firstname\", \"lastname\", \"createdate\"], \"limit\": 100 } }}",
+        "jsonBody": "={{ { \"filterGroups\": [ { \"filters\": [ { \"propertyName\": \"createdate\", \"operator\": \"GT\", \"value\": String($json.lastPollTime) } ] } ], \"sorts\": [ { \"propertyName\": \"createdate\", \"direction\": \"ASCENDING\" } ], \"properties\": [\"email\", \"firstname\", \"lastname\", \"createdate\", \"company\", \"proses_yang_ingin_diotomatisasi\", \"tools_digunakan\", \"ukuran_tim\", \"urgensi\"], \"limit\": 100 } }}",
         "options": {}
       },
-      "id": "eb4b5e84-45fa-4ca3-99f1-d4e506a0cc57",
-      "name": "PollNewContacts",
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.2,
-      "position": [
-        432,
-        640
-      ],
-      "retryOnFail": true,
-      "maxTries": 3,
-      "waitBetweenTries": 1000,
       "credentials": {
         "httpHeaderAuth": {
-          "id": "EXnS942x3zXjSVeW",
-          "name": "HubSpotAuth"
+          "id": "REPLACE_WITH_CREDENTIAL_ID",
+          "name": "HubSpot Private App Token"
         }
-      },
-      "onError": "continueErrorOutput"
+      }
     },
     {
-      "parameters": {
-        "jsCode": "const staticData = $getWorkflowStaticData('global');\nstaticData.lastPollTime = Date.now();\n\nreturn $input.all();"
-      },
-      "id": "80764e7b-79f0-4230-adb4-936cd9e7a832",
+      "id": "code-update-lastpoll",
       "name": "UpdateLastPollTime",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [
-        656,
-        640
-      ],
+      "position": [40, 40],
       "notesInFlow": true,
-      "notes": "Simpan timestamp SEKARANG sebagai batas polling berikutnya, supaya contact yang sudah diproses nggak keambil ulang di run berikutnya."
+      "notes": "Simpan timestamp SEKARANG sebagai batas polling berikutnya, supaya contact yang sudah diproses nggak keambil ulang di run berikutnya.",
+      "parameters": {
+        "jsCode": "const staticData = $getWorkflowStaticData('global');\nstaticData.lastPollTime = Date.now();\n\nreturn $input.all();"
+      }
     },
     {
+      "id": "if-has-contacts",
+      "name": "HasNewContacts",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [280, 40],
       "parameters": {
         "conditions": {
-          "options": {
-            "caseSensitive": true,
-            "leftValue": "",
-            "typeValidation": "strict",
-            "version": 2
-          },
+          "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "loose" },
           "conditions": [
             {
               "id": "cond1",
               "leftValue": "={{ $json.results?.length || 0 }}",
               "rightValue": 0,
-              "operator": {
-                "type": "number",
-                "operation": "gt"
-              }
+              "operator": { "type": "number", "operation": "gt" }
             }
           ],
           "combinator": "and"
         },
         "options": {}
-      },
-      "id": "f9c9e928-414c-4922-b41b-5459b2ea4a26",
-      "name": "HasNewContacts",
-      "type": "n8n-nodes-base.if",
-      "typeVersion": 2.2,
-      "position": [
-        880,
-        640
-      ]
+      }
     },
     {
-      "parameters": {},
-      "id": "be1ae108-e67c-4c2b-8301-e74945aadf87",
+      "id": "noop-no-new",
       "name": "NoNewContacts",
       "type": "n8n-nodes-base.noOp",
       "typeVersion": 1,
-      "position": [
-        1104,
-        736
-      ]
+      "position": [520, 200],
+      "parameters": {}
     },
     {
-      "parameters": {
-        "fieldToSplitOut": "results",
-        "options": {}
-      },
-      "id": "8787b4ed-9225-4da8-b082-57afb20b78d9",
+      "id": "split-out",
       "name": "SplitOut",
       "type": "n8n-nodes-base.splitOut",
       "typeVersion": 1,
-      "position": [
-        1104,
-        544
-      ]
+      "position": [520, -60],
+      "parameters": {
+        "fieldToSplitOut": "results",
+        "options": {}
+      }
     },
     {
-      "parameters": {
-        "jsCode": "const item = $input.first().json;\nconst props = item.properties || {};\n\nconst contact = {\n  email: props.email || '',\n  firstname: props.firstname || '',\n  lastname: props.lastname || '',\n  hubspotContactId: item.id || null,\n  createdAt: props.createdate || null\n};\n\nif (!contact.email) {\n  throw new Error('ExtractContactData: field email tidak ditemukan pada contact ' + contact.hubspotContactId);\n}\n\nreturn [{ json: contact }];"
-      },
-      "id": "3b571f91-6f36-4e0e-b73e-e4f0c85747e7",
+      "id": "code-extract-2",
       "name": "ExtractContactData",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [
-        1328,
-        544
-      ],
+      "position": [760, -60],
       "notesInFlow": true,
-      "notes": "Bentuk data dari search API: { id, properties: { email, firstname, lastname, createdate } }"
+      "notes": "Bentuk data dari search API: { id, properties: {...} }. Sekarang termasuk field kualifikasi dari form.",
+      "parameters": {
+        "jsCode": "const item = $input.first().json;\nconst props = item.properties || {};\n\nconst contact = {\n  email: props.email || '',\n  firstname: props.firstname || '',\n  lastname: props.lastname || '',\n  hubspotContactId: item.id || null,\n  createdAt: props.createdate || null,\n  company: props.company || '',\n  proses: props.proses_yang_ingin_diotomatisasi || '',\n  tools: props.tools_digunakan || '',\n  ukuranTim: props.ukuran_tim || '',\n  urgensi: props.urgensi || ''\n};\n\nif (!contact.email) {\n  throw new Error('ExtractContactData: field email tidak ditemukan pada contact ' + contact.hubspotContactId);\n}\n\nreturn [{ json: contact }];"
+      }
     },
     {
+      "id": "http-groq-2",
+      "name": "GenerateLeadSummary",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1000, -60],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 1000,
+      "onError": "continueErrorOutput",
+      "notesInFlow": true,
+      "notes": "Prompt diminta output dengan format terstruktur (marker KUALIFIKASI: dan DRAFT EMAIL:) supaya bisa dipisahkan otomatis di node ParseAIOutput berikutnya.",
       "parameters": {
         "method": "POST",
         "url": "https://api.groq.com/openai/v1/chat/completions",
@@ -158,280 +151,157 @@
         "genericAuthType": "httpHeaderAuth",
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ { \"model\": \"openai/gpt-oss-20b\", \"messages\": [ { \"role\": \"system\", \"content\": \"Kamu asisten yang meringkas data lead CRM dalam 1-2 kalimat singkat dan netral, bahasa Indonesia.\" }, { \"role\": \"user\", \"content\": \"Nama: \" + $json.firstname + \" \" + $json.lastname + \"\\nEmail: \" + $json.email } ] } }}",
+        "jsonBody": "={{ { \"model\": \"openai/gpt-oss-20b\", \"messages\": [ { \"role\": \"system\", \"content\": \"Kamu asisten sales Alurio, agency AI automation. PENTING: field 'tools yang sudah dipakai' itu artinya tools yang SAAT INI dipakai calon klien sehari-hari (existing/current tools) - BUKAN tools yang mereka minta dipakai untuk automation barunya. Jangan pernah menyimpulkan bahwa mereka minta automation dibangun pakai tools tersebut. Untuk tiap lead, kerjakan 2 hal dan jawab PERSIS dengan format berikut (bahasa Indonesia):\\n\\nKUALIFIKASI: <1-2 kalimat menilai seberapa cocok lead ini untuk Alurio, berdasarkan proses yang ingin diotomatisasi, tools yang SAAT INI mereka pakai, ukuran tim, dan urgensi>\\n\\nDRAFT EMAIL:\\n<email singkat 3-5 kalimat, personal, menyebut kebutuhan spesifik mereka (proses yang ingin diotomatisasi), mengajak jadwalkan Discovery Call. Jangan pakai placeholder seperti [Nama], sebutkan nama asli dari data yang diberikan. Jangan menyebut solusi automation akan dibangun 'menggunakan' tools existing mereka - cukup akui tools yang mereka pakai sekarang sebagai konteks saja>\" }, { \"role\": \"user\", \"content\": \"Nama: \" + $json.firstname + \"\\nPerusahaan: \" + $json.company + \"\\nUkuran tim: \" + $json.ukuranTim + \"\\nProses yang ingin diotomatisasi (ini yang mau dibangun automation-nya): \" + $json.proses + \"\\nTools yang SAAT INI sudah dipakai sehari-hari (konteks existing, bukan permintaan): \" + $json.tools + \"\\nUrgensi: \" + $json.urgensi } ] } }}",
         "options": {}
       },
-      "id": "8a8a0cc3-46d9-4b79-b450-4ea8b5531e04",
-      "name": "GenerateLeadSummary",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "REPLACE_WITH_CREDENTIAL_ID",
+          "name": "Groq API Key"
+        }
+      }
+    },
+    {
+      "id": "code-parse-ai",
+      "name": "ParseAIOutput",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1240, -60],
+      "notesInFlow": true,
+      "notes": "Memisahkan bagian KUALIFIKASI dan DRAFT EMAIL dari respons Groq, sekaligus membawa kembali data contact dari ExtractContactData (yang hilang setelah lewat node Groq).",
+      "parameters": {
+        "jsCode": "const raw = $input.first().json;\nconst content = raw.choices?.[0]?.message?.content || '';\n\nconst qualMatch = content.match(/KUALIFIKASI:\\s*([\\s\\S]*?)(?:\\n\\s*DRAFT EMAIL:|DRAFT EMAIL:)/i);\nconst emailMatch = content.match(/DRAFT EMAIL:\\s*([\\s\\S]*)/i);\n\nconst qualification = qualMatch ? qualMatch[1].trim() : content.trim();\nconst draftEmail = emailMatch ? emailMatch[1].trim() : '';\n\nconst contact = $('ExtractContactData').item.json;\n\nreturn [{\n  json: {\n    hubspotContactId: contact.hubspotContactId,\n    firstname: contact.firstname,\n    lastname: contact.lastname,\n    email: contact.email,\n    qualification,\n    draftEmail\n  }\n}];"
+      }
+    },
+    {
+      "id": "http-create-note",
+      "name": "CreateHubSpotNote",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [
-        1552,
-        544
-      ],
+      "position": [1480, -60],
       "retryOnFail": true,
       "maxTries": 3,
       "waitBetweenTries": 1000,
+      "onError": "continueErrorOutput",
+      "notesInFlow": true,
+      "notes": "Simpan hasil AI sebagai Note di contact - supaya kamu bisa review kualifikasi + draft email langsung di HubSpot, TANPA otomatis terkirim. associationTypeId 202 = Note ke Contact (default HubSpot), cek ulang kalau ternyata gagal.",
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.hubapi.com/crm/v3/objects/notes",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ { \"properties\": { \"hs_note_body\": \"KUALIFIKASI:\\n\" + $json.qualification + \"\\n\\nDRAFT EMAIL (review dulu sebelum kirim):\\n\" + $json.draftEmail, \"hs_timestamp\": Date.now() }, \"associations\": [ { \"to\": { \"id\": $json.hubspotContactId }, \"types\": [ { \"associationCategory\": \"HUBSPOT_DEFINED\", \"associationTypeId\": 202 } ] } ] } }}",
+        "options": {}
+      },
       "credentials": {
         "httpHeaderAuth": {
-          "id": "I3oQ2hzivS3Lwgla",
-          "name": "GroqAuth"
+          "id": "REPLACE_WITH_CREDENTIAL_ID",
+          "name": "HubSpot Private App Token"
         }
-      },
-      "onError": "continueErrorOutput"
+      }
     },
     {
+      "id": "set-log-enriched-2",
+      "name": "LogEnrichedLead",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [1720, -160],
       "parameters": {
         "assignments": {
           "assignments": [
-            {
-              "id": "e1",
-              "name": "status",
-              "type": "string",
-              "value": "failed"
-            },
-            {
-              "id": "e2",
-              "name": "error",
-              "type": "string",
-              "value": "={{ $json.error?.message || 'Unknown error from Groq API' }}"
-            }
+            { "id": "l1", "name": "status", "type": "string", "value": "enriched_with_draft" },
+            { "id": "l2", "name": "qualification", "type": "string", "value": "={{ $('ParseAIOutput').item.json.qualification }}" },
+            { "id": "l3", "name": "draftEmail", "type": "string", "value": "={{ $('ParseAIOutput').item.json.draftEmail }}" },
+            { "id": "l4", "name": "loggedAt", "type": "string", "value": "={{ $now.toISO() }}" },
+            { "id": "l5", "name": "hubspotContactId", "type": "string", "value": "={{ $('ParseAIOutput').item.json.hubspotContactId }}" },
+            { "id": "l6", "name": "firstname", "type": "string", "value": "={{ $('ParseAIOutput').item.json.firstname }}" },
+            { "id": "l7", "name": "lastname", "type": "string", "value": "={{ $('ParseAIOutput').item.json.lastname }}" },
+            { "id": "l8", "name": "email", "type": "string", "value": "={{ $('ParseAIOutput').item.json.email }}" }
           ]
         },
         "options": {}
-      },
-      "id": "5cc5e9d5-7b88-41bd-acac-642c2fb0ab53",
+      }
+    },
+    {
+      "id": "set-log-error-3",
       "name": "LogSyncError",
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
-      "position": [
-        1776,
-        640
-      ]
-    },
-    {
-      "parameters": {},
-      "id": "11341c51-4023-46da-8d2e-805d4a07893e",
-      "name": "NotifyDownstream",
-      "type": "n8n-nodes-base.noOp",
-      "typeVersion": 1,
-      "position": [
-        2000,
-        448
-      ],
-      "notesInFlow": true,
-      "notes": "Placeholder. Ganti dengan node Slack/Email/dsb kalau mau kirim notifikasi beneran."
-    },
-    {
-      "parameters": {
-        "inputSource": "passthrough"
-      },
-      "type": "n8n-nodes-base.executeWorkflowTrigger",
-      "typeVersion": 1.2,
-      "position": [
-        -16,
-        640
-      ],
-      "id": "201de3b7-3876-4404-bdee-b173d0067e6c",
-      "name": "When Executed by Another Workflow"
-    },
-    {
+      "position": [1240, 160],
       "parameters": {
         "assignments": {
           "assignments": [
-            {
-              "id": "l1",
-              "name": "status",
-              "type": "string",
-              "value": "enriched"
-            },
-            {
-              "id": "l2",
-              "name": "summary",
-              "type": "string",
-              "value": "={{ $json.choices?.[0]?.message?.content || '' }}"
-            },
-            {
-              "id": "l3",
-              "name": "loggedAt",
-              "type": "string",
-              "value": "={{ $now.toISO() }}"
-            },
-            {
-              "id": "l4",
-              "name": "hubspotContactId",
-              "type": "string",
-              "value": "={{ $('ExtractContactData').item.json.hubspotContactId }}"
-            },
-            {
-              "id": "l5",
-              "name": "firstname",
-              "type": "string",
-              "value": "={{ $('ExtractContactData').item.json.firstname }}"
-            },
-            {
-              "id": "l6",
-              "name": "lastname",
-              "type": "string",
-              "value": "={{ $('ExtractContactData').item.json.lastname }}"
-            },
-            {
-              "id": "l7",
-              "name": "email",
-              "type": "string",
-              "value": "={{ $('ExtractContactData').item.json.email }}"
-            }
+            { "id": "e1", "name": "status", "type": "string", "value": "failed" },
+            { "id": "e2", "name": "error", "type": "string", "value": "={{ $json.error?.message || 'Unknown error' }}" }
           ]
         },
         "options": {}
-      },
-      "id": "69eacc9b-708a-4155-bcd7-07f37f3d853c",
-      "name": "LogEnrichedLead1",
-      "type": "n8n-nodes-base.set",
-      "typeVersion": 3.4,
-      "position": [
-        1792,
-        448
-      ]
+      }
+    },
+    {
+      "id": "noop-notify-2",
+      "name": "NotifyDownstream",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [1960, -160],
+      "notesInFlow": true,
+      "notes": "Placeholder. Ganti dengan node Slack/Email/dsb kalau mau kirim notifikasi 'ada draft baru untuk direview' ke diri sendiri.",
+      "parameters": {}
     }
   ],
-  "pinData": {},
   "connections": {
+    "ScheduleTrigger": {
+      "main": [[{ "node": "GetLastPollTime", "type": "main", "index": 0 }]]
+    },
     "GetLastPollTime": {
-      "main": [
-        [
-          {
-            "node": "PollNewContacts",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
+      "main": [[{ "node": "PollNewContacts", "type": "main", "index": 0 }]]
     },
     "PollNewContacts": {
       "main": [
-        [
-          {
-            "node": "UpdateLastPollTime",
-            "type": "main",
-            "index": 0
-          }
-        ],
-        [
-          {
-            "node": "UpdateLastPollTime",
-            "type": "main",
-            "index": 0
-          }
-        ]
+        [{ "node": "UpdateLastPollTime", "type": "main", "index": 0 }],
+        [{ "node": "UpdateLastPollTime", "type": "main", "index": 0 }]
       ]
     },
     "UpdateLastPollTime": {
-      "main": [
-        [
-          {
-            "node": "HasNewContacts",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
+      "main": [[{ "node": "HasNewContacts", "type": "main", "index": 0 }]]
     },
     "HasNewContacts": {
       "main": [
-        [
-          {
-            "node": "SplitOut",
-            "type": "main",
-            "index": 0
-          }
-        ],
-        [
-          {
-            "node": "NoNewContacts",
-            "type": "main",
-            "index": 0
-          }
-        ]
+        [{ "node": "SplitOut", "type": "main", "index": 0 }],
+        [{ "node": "NoNewContacts", "type": "main", "index": 0 }]
       ]
     },
     "SplitOut": {
-      "main": [
-        [
-          {
-            "node": "ExtractContactData",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
+      "main": [[{ "node": "ExtractContactData", "type": "main", "index": 0 }]]
     },
     "ExtractContactData": {
-      "main": [
-        [
-          {
-            "node": "GenerateLeadSummary",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
+      "main": [[{ "node": "GenerateLeadSummary", "type": "main", "index": 0 }]]
     },
     "GenerateLeadSummary": {
       "main": [
-        [
-          {
-            "node": "LogEnrichedLead1",
-            "type": "main",
-            "index": 0
-          }
-        ],
-        [
-          {
-            "node": "LogSyncError",
-            "type": "main",
-            "index": 0
-          }
-        ]
+        [{ "node": "ParseAIOutput", "type": "main", "index": 0 }],
+        [{ "node": "LogSyncError", "type": "main", "index": 0 }]
       ]
     },
-    "When Executed by Another Workflow": {
+    "ParseAIOutput": {
+      "main": [[{ "node": "CreateHubSpotNote", "type": "main", "index": 0 }]]
+    },
+    "CreateHubSpotNote": {
       "main": [
-        [
-          {
-            "node": "GetLastPollTime",
-            "type": "main",
-            "index": 0
-          }
-        ]
+        [{ "node": "LogEnrichedLead", "type": "main", "index": 0 }],
+        [{ "node": "LogSyncError", "type": "main", "index": 0 }]
       ]
     },
-    "LogEnrichedLead1": {
-      "main": [
-        [
-          {
-            "node": "NotifyDownstream",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
+    "LogEnrichedLead": {
+      "main": [[{ "node": "NotifyDownstream", "type": "main", "index": 0 }]]
     }
   },
-  "active": true,
+  "active": false,
   "settings": {
     "executionOrder": "v1",
-    "binaryMode": "separate",
-    "timeSavedMode": "fixed",
-    "errorWorkflow": "gHRGJ04Ae2yUC8nu",
-    "callerPolicy": "workflowsFromSameOwner",
-    "availableInMCP": false
+    "timezone": "Asia/Jakarta"
   },
-  "versionId": "8ffefbaf-960a-46a9-87bf-2fcda81b54ad",
-  "meta": {
-    "instanceId": "8fcfc9178925bdccfcc7900a650c91597411db6c51e3e46206cba7bd3177a16e"
-  },
-  "nodeGroups": [],
-  "id": "vtRB27JTBzTZD461",
-  "tags": []
+  "pinData": {}
 }
