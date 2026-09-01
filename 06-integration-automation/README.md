@@ -12,15 +12,17 @@ Layer ini menghubungkan CRM Alurio (HubSpot) dengan automation eksternal lewat n
 
 File: [`HSC-01-Push-Lead-to-HubSpot.json`](./HSC-01-Push-Lead-to-HubSpot.json)
 
-## Workflow 2: HSC-02 — HubSpot Contact Polling + AI Enrichment
+## Workflow 2: HSC-02 — HubSpot Contact Polling + AI Qualification & Outreach Draft
 
-**Tujuan:** Mendeteksi contact baru di HubSpot secara berkala, lalu menghasilkan ringkasan lead otomatis pakai LLM (Groq) — mensimulasikan automation yang membantu sales/CS tim Alurio memahami lead baru tanpa harus baca satu-satu.
+**Tujuan:** Mendeteksi contact baru di HubSpot secara berkala, lalu memakai LLM (Groq) untuk dua hal sekaligus: (1) menilai kualifikasi lead berdasarkan jawaban form (proses yang ingin diotomatisasi, tools yang dipakai, ukuran tim, urgensi), dan (2) menulis draft email outreach yang personal — bukan sekadar ringkasan generik.
 
 **Kenapa polling, bukan webhook:** Action "Webhook" di HubSpot Workflows hanya tersedia di paket Operations Hub Professional ke atas, tidak ada di plan Free. Sebagai gantinya, workflow ini polling HubSpot Search API setiap 5 menit, dengan static data menyimpan timestamp polling terakhir supaya tidak memproses ulang contact yang sama.
 
-**Alur:** Schedule Trigger (5 menit) → Ambil waktu polling terakhir → Search contact baru di HubSpot → Simpan waktu polling baru → Cek ada data baru atau tidak → (jika ada) pecah per-contact → Generate ringkasan via Groq → Log hasil.
+**Alur:** Schedule Trigger (5 menit) → Ambil waktu polling terakhir → Search contact baru (termasuk field kualifikasi) → Simpan waktu polling baru → Cek ada data baru atau tidak → (jika ada) pecah per-contact → Groq nilai kualifikasi + tulis draft email → Pisahkan kedua bagian dari respons AI → Simpan sebagai Note di contact HubSpot → Log hasil.
 
-**Poin teknis:** Static data workflow dipakai sebagai state sederhana (bukan database eksternal), model LLM yang dipakai `openai/gpt-oss-20b` (pengganti resmi `llama-3.1-8b-instant` yang di-deprecate Groq per Agustus 2026).
+**Keputusan desain penting:** draft email TIDAK dikirim otomatis. Hasil AI (kualifikasi + draft) disimpan sebagai Note di HubSpot, untuk direview manusia dulu sebelum benar-benar dikirim ke calon klien — automation membantu mempercepat kerja, bukan menggantikan keputusan manusia di titik yang butuh judgment.
+
+**Poin teknis:** Static data workflow dipakai sebagai state sederhana (bukan database eksternal), model LLM yang dipakai `openai/gpt-oss-20b` (pengganti resmi `llama-3.1-8b-instant` yang di-deprecate Groq per Agustus 2026), prompt AI diminta output dengan format terstruktur (marker `KUALIFIKASI:` dan `DRAFT EMAIL:`) supaya bisa dipisahkan otomatis lewat kode, bukan lewat parsing yang rapuh.
 
 File: [`HSC-02-HubSpot-Contact-Polling.json`](./HSC-02-HubSpot-Contact-Polling.json)
 
